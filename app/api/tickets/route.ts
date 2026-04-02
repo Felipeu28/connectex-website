@@ -1,7 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase'
+import { createClient as createAdminClient } from '@supabase/supabase-js'
 
 const PRIORITIES = ['low', 'medium', 'high', 'urgent'] as const
+
+function getSupabaseAdmin() {
+  return createAdminClient(
+    process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+  )
+}
 
 export async function POST(req: NextRequest) {
   try {
@@ -22,7 +30,14 @@ export async function POST(req: NextRequest) {
     // Priority validation
     const safePriority = PRIORITIES.includes(priority) ? priority : 'medium'
 
-    const supabase = createClient()
+    const supabase = getSupabaseAdmin()
+
+    // Auto-detect linked CRM contact by email
+    const { data: contact } = await supabase
+      .from('crm_contacts')
+      .select('id')
+      .eq('email', email.toLowerCase().trim())
+      .maybeSingle()
 
     const { data: ticket, error } = await supabase
       .from('tickets')
@@ -34,14 +49,33 @@ export async function POST(req: NextRequest) {
         description,
         priority: safePriority,
         image_url: image_url || null,
+        contact_id: contact?.id ?? null,
       })
-      .select('token')
+      .select('id, token')
       .single()
 
     if (error) {
       console.error('Supabase insert error:', error)
       return NextResponse.json({ error: 'Failed to create ticket' }, { status: 500 })
     }
+
+    // Log to CRM activity if contact was detected
+    if (contact?.id) {
+      await supabase.from('crm_activity').insert({
+        type: 'ticket',
+        contact_id: contact.id,
+        description: `Support ticket submitted: "${subject}"`,
+        metadata: { ticket_id: ticket.id },
+      })
+    }
+
+    // Fire-and-forget AI triage (don't block the response)
+    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000'
+    fetch(`${baseUrl}/api/tickets/triage`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ ticket_id: ticket.id }),
+    }).catch((err) => console.error('Triage dispatch failed:', err))
 
     return NextResponse.json({ token: ticket.token }, { status: 201 })
   } catch (err) {

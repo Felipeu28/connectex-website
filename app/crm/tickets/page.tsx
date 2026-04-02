@@ -5,7 +5,7 @@ import { CRMShell } from '@/components/crm/CRMShell'
 import { createSupabaseBrowser } from '@/lib/supabase-browser'
 import { TICKET_STATUS_CONFIG, TICKET_PRIORITY_CONFIG } from '@/lib/crm-types'
 import type { Ticket } from '@/lib/crm-types'
-import { Search, ExternalLink } from 'lucide-react'
+import { Search, ExternalLink, Bot, AlertTriangle } from 'lucide-react'
 import Link from 'next/link'
 
 export default function CRMTicketsPage() {
@@ -31,7 +31,7 @@ export default function CRMTicketsPage() {
     (async () => {
       setLoading(true)
       const supabase = createSupabaseBrowser()
-      let query = supabase.from('tickets').select('*', { count: 'exact' }).order('created_at', { ascending: false })
+      let query = supabase.from('tickets').select('*, contact:crm_contacts(id, name)', { count: 'exact' }).order('created_at', { ascending: false })
 
       if (statusFilter !== 'all') {
         query = query.eq('status', statusFilter)
@@ -51,7 +51,7 @@ export default function CRMTicketsPage() {
 
   async function load() {
     const supabase = createSupabaseBrowser()
-    let query = supabase.from('tickets').select('*', { count: 'exact' }).order('created_at', { ascending: false })
+    let query = supabase.from('tickets').select('*, contact:crm_contacts(id, name)', { count: 'exact' }).order('created_at', { ascending: false })
 
     if (statusFilter !== 'all') {
       query = query.eq('status', statusFilter)
@@ -119,6 +119,7 @@ export default function CRMTicketsPage() {
                 <tr className="border-b border-white/8">
                   <th className="text-left px-4 py-3 text-[var(--color-text-muted)] font-medium">Subject</th>
                   <th className="text-left px-4 py-3 text-[var(--color-text-muted)] font-medium hidden md:table-cell">Requester</th>
+                  <th className="text-left px-4 py-3 text-[var(--color-text-muted)] font-medium hidden xl:table-cell">Contact</th>
                   <th className="text-left px-4 py-3 text-[var(--color-text-muted)] font-medium">Status</th>
                   <th className="text-left px-4 py-3 text-[var(--color-text-muted)] font-medium hidden sm:table-cell">Priority</th>
                   <th className="text-left px-4 py-3 text-[var(--color-text-muted)] font-medium hidden lg:table-cell">Created</th>
@@ -129,12 +130,12 @@ export default function CRMTicketsPage() {
                 {loading ? (
                   [...Array(5)].map((_, i) => (
                     <tr key={i} className="border-b border-white/5">
-                      <td colSpan={6} className="px-4 py-3"><div className="h-5 bg-white/5 animate-pulse rounded w-3/4" /></td>
+                      <td colSpan={7} className="px-4 py-3"><div className="h-5 bg-white/5 animate-pulse rounded w-3/4" /></td>
                     </tr>
                   ))
                 ) : tickets.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="px-4 py-10 text-center text-[var(--color-text-muted)]">
+                    <td colSpan={7} className="px-4 py-10 text-center text-[var(--color-text-muted)]">
                       No tickets found.
                     </td>
                   </tr>
@@ -145,12 +146,36 @@ export default function CRMTicketsPage() {
                     return (
                       <tr key={t.id} className="border-b border-white/5 hover:bg-white/[0.03] transition-colors">
                         <td className="px-4 py-3">
-                          <p className="text-white font-medium">{t.subject}</p>
+                          <div className="flex items-center gap-2">
+                            <p className="text-white font-medium">{t.subject}</p>
+                            {t.ai_handled && (
+                              <span title="AI handled" className="flex-shrink-0">
+                                <Bot className="w-3.5 h-3.5 text-[#C084FC]" />
+                              </span>
+                            )}
+                            {t.routed_to_mark && !t.ai_handled && (
+                              <span title="Needs Mark" className="flex-shrink-0">
+                                <AlertTriangle className="w-3.5 h-3.5 text-[#F59E0B]" />
+                              </span>
+                            )}
+                          </div>
                           <p className="text-xs text-[var(--color-text-faint)] mt-0.5 line-clamp-1">{t.description}</p>
                         </td>
                         <td className="px-4 py-3 hidden md:table-cell">
                           <p className="text-white text-sm">{t.name}</p>
                           <p className="text-xs text-[var(--color-text-faint)]">{t.email}</p>
+                        </td>
+                        <td className="px-4 py-3 hidden xl:table-cell">
+                          {t.contact ? (
+                            <Link
+                              href={`/crm/contacts/${(Array.isArray(t.contact) ? t.contact[0] : t.contact)?.id}`}
+                              className="text-sm text-[#00C9A7] hover:underline"
+                            >
+                              {(Array.isArray(t.contact) ? t.contact[0] : t.contact)?.name}
+                            </Link>
+                          ) : (
+                            <span className="text-xs text-[var(--color-text-faint)]">—</span>
+                          )}
                         </td>
                         <td className="px-4 py-3">
                           <select

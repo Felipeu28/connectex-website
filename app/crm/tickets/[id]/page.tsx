@@ -5,7 +5,7 @@ import { CRMShell } from '@/components/crm/CRMShell'
 import { createSupabaseBrowser } from '@/lib/supabase-browser'
 import { TICKET_STATUS_CONFIG } from '@/lib/crm-types'
 import type { Ticket } from '@/lib/crm-types'
-import { ArrowLeft, Send, ExternalLink } from 'lucide-react'
+import { ArrowLeft, Send, ExternalLink, User, Bot, AlertTriangle, Search, X } from 'lucide-react'
 import Link from 'next/link'
 import { clsx } from 'clsx'
 
@@ -18,6 +18,13 @@ interface TicketMessage {
   created_at: string
 }
 
+interface ContactOption {
+  id: string
+  name: string
+  email: string | null
+  company: string | null
+}
+
 export default function CRMTicketDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params)
   const [ticket, setTicket] = useState<Ticket | null>(null)
@@ -26,28 +33,72 @@ export default function CRMTicketDetailPage({ params }: { params: Promise<{ id: 
   const [reply, setReply] = useState('')
   const [sending, setSending] = useState(false)
 
+  // Contact assignment
+  const [assignOpen, setAssignOpen] = useState(false)
+  const [contactSearch, setContactSearch] = useState('')
+  const [contactResults, setContactResults] = useState<ContactOption[]>([])
+  const [assigning, setAssigning] = useState(false)
+
   useEffect(() => {
-    (async () => {
-      const supabase = createSupabaseBrowser()
-      const [ticketRes, msgsRes] = await Promise.all([
-        supabase.from('tickets').select('*').eq('id', id).single(),
-        supabase.from('ticket_messages').select('*').eq('ticket_id', id).order('created_at', { ascending: true }),
-      ])
-      setTicket(ticketRes.data)
-      setMessages(msgsRes.data ?? [])
-      setLoading(false)
-    })()
+    load()
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id])
 
   async function load() {
     const supabase = createSupabaseBrowser()
     const [ticketRes, msgsRes] = await Promise.all([
-      supabase.from('tickets').select('*').eq('id', id).single(),
+      supabase
+        .from('tickets')
+        .select('*, contact:crm_contacts(id, name, email)')
+        .eq('id', id)
+        .single(),
       supabase.from('ticket_messages').select('*').eq('ticket_id', id).order('created_at', { ascending: true }),
     ])
-    setTicket(ticketRes.data)
+    setTicket(ticketRes.data as Ticket | null)
     setMessages(msgsRes.data ?? [])
     setLoading(false)
+  }
+
+  // Search contacts for assignment
+  useEffect(() => {
+    if (!contactSearch.trim()) {
+      setContactResults([])
+      return
+    }
+    const timer = setTimeout(async () => {
+      const supabase = createSupabaseBrowser()
+      const { data } = await supabase
+        .from('crm_contacts')
+        .select('id, name, email, company')
+        .or(`name.ilike.%${contactSearch}%,email.ilike.%${contactSearch}%,company.ilike.%${contactSearch}%`)
+        .limit(8)
+      setContactResults(data ?? [])
+    }, 250)
+    return () => clearTimeout(timer)
+  }, [contactSearch])
+
+  async function assignContact(contactId: string) {
+    if (!ticket) return
+    setAssigning(true)
+    const supabase = createSupabaseBrowser()
+    await supabase
+      .from('tickets')
+      .update({ contact_id: contactId, updated_at: new Date().toISOString() })
+      .eq('id', ticket.id)
+    setAssignOpen(false)
+    setContactSearch('')
+    setAssigning(false)
+    load()
+  }
+
+  async function unassignContact() {
+    if (!ticket) return
+    const supabase = createSupabaseBrowser()
+    await supabase
+      .from('tickets')
+      .update({ contact_id: null, updated_at: new Date().toISOString() })
+      .eq('id', ticket.id)
+    load()
   }
 
   async function sendReply() {
@@ -97,6 +148,7 @@ export default function CRMTicketDetailPage({ params }: { params: Promise<{ id: 
   }
 
   const status = TICKET_STATUS_CONFIG[ticket.status]
+  const linkedContact = Array.isArray(ticket.contact) ? ticket.contact[0] : ticket.contact
 
   return (
     <CRMShell>
@@ -107,7 +159,21 @@ export default function CRMTicketDetailPage({ params }: { params: Promise<{ id: 
             <ArrowLeft className="w-5 h-5" />
           </Link>
           <div className="flex-1 min-w-0">
-            <h1 className="text-xl font-bold text-white">{ticket.subject}</h1>
+            <div className="flex items-center gap-2 flex-wrap">
+              <h1 className="text-xl font-bold text-white">{ticket.subject}</h1>
+              {ticket.ai_handled && (
+                <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-[#8B2BE2]/20 text-[#C084FC] flex items-center gap-1">
+                  <Bot className="w-3 h-3" />
+                  AI Handled
+                </span>
+              )}
+              {ticket.routed_to_mark && !ticket.ai_handled && (
+                <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-[#F59E0B]/20 text-[#F59E0B] flex items-center gap-1">
+                  <AlertTriangle className="w-3 h-3" />
+                  Needs Mark
+                </span>
+              )}
+            </div>
             <div className="flex items-center gap-3 mt-1 flex-wrap">
               <span className="text-sm text-[var(--color-text-muted)]">{ticket.name} &middot; {ticket.email}</span>
               {ticket.company && <span className="text-sm text-[var(--color-text-faint)]">{ticket.company}</span>}
@@ -135,6 +201,78 @@ export default function CRMTicketDetailPage({ params }: { params: Promise<{ id: 
           </div>
         </div>
 
+        {/* Contact link panel */}
+        <div className="glass rounded-xl p-4">
+          <div className="flex items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <User className="w-4 h-4 text-[var(--color-text-muted)]" />
+              <span className="text-sm font-medium text-[var(--color-text-muted)]">CRM Contact</span>
+            </div>
+            {linkedContact ? (
+              <div className="flex items-center gap-3">
+                <Link
+                  href={`/crm/contacts/${linkedContact.id}`}
+                  className="flex items-center gap-2 text-sm text-[#00C9A7] hover:underline"
+                >
+                  <span className="w-6 h-6 rounded-full bg-[#00C9A7]/15 flex items-center justify-center text-xs font-bold text-[#00C9A7]">
+                    {linkedContact.name.charAt(0).toUpperCase()}
+                  </span>
+                  {linkedContact.name}
+                </Link>
+                <button
+                  onClick={unassignContact}
+                  className="p-1 rounded hover:bg-white/10 text-[var(--color-text-faint)] hover:text-[#FF6B6B] transition-colors"
+                  title="Remove contact link"
+                >
+                  <X className="w-3.5 h-3.5" />
+                </button>
+              </div>
+            ) : (
+              <button
+                onClick={() => setAssignOpen((v) => !v)}
+                className="text-xs text-[#00C9A7] hover:underline flex items-center gap-1"
+              >
+                <Search className="w-3.5 h-3.5" />
+                Assign Contact
+              </button>
+            )}
+          </div>
+
+          {/* Contact search dropdown */}
+          {assignOpen && (
+            <div className="mt-3 space-y-2">
+              <input
+                type="text"
+                value={contactSearch}
+                onChange={(e) => setContactSearch(e.target.value)}
+                placeholder="Search by name, email, or company..."
+                autoFocus
+                className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white placeholder:text-[var(--color-text-faint)] focus:outline-none focus:ring-2 focus:ring-[#00C9A7] text-sm"
+              />
+              {contactResults.length > 0 && (
+                <div className="border border-white/10 rounded-lg overflow-hidden">
+                  {contactResults.map((c) => (
+                    <button
+                      key={c.id}
+                      onClick={() => assignContact(c.id)}
+                      disabled={assigning}
+                      className="w-full flex items-center gap-3 px-3 py-2.5 hover:bg-white/5 transition-colors text-left border-b border-white/5 last:border-0"
+                    >
+                      <span className="w-7 h-7 rounded-full bg-[#00C9A7]/15 flex items-center justify-center text-xs font-bold text-[#00C9A7] flex-shrink-0">
+                        {c.name.charAt(0).toUpperCase()}
+                      </span>
+                      <div>
+                        <p className="text-sm text-white font-medium">{c.name}</p>
+                        <p className="text-xs text-[var(--color-text-faint)]">{c.email}{c.company ? ` · ${c.company}` : ''}</p>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+
         {/* Original description */}
         <div className="glass rounded-xl p-5">
           <p className="text-xs text-[var(--color-text-faint)] mb-2">
@@ -157,12 +295,19 @@ export default function CRMTicketDetailPage({ params }: { params: Promise<{ id: 
                   className={clsx(
                     'p-3 rounded-lg max-w-[85%]',
                     m.sender_type === 'admin'
-                      ? 'ml-auto bg-[#00C9A7]/10 border border-[#00C9A7]/20'
+                      ? m.sender_name === 'ConnectEx AI Support'
+                        ? 'ml-auto bg-[#8B2BE2]/10 border border-[#8B2BE2]/20'
+                        : 'ml-auto bg-[#00C9A7]/10 border border-[#00C9A7]/20'
                       : 'bg-white/[0.03] border border-white/5'
                   )}
                 >
                   <div className="flex items-center gap-2 mb-1">
-                    <span className={clsx('text-xs font-medium', m.sender_type === 'admin' ? 'text-[#00C9A7]' : 'text-white')}>
+                    {m.sender_name === 'ConnectEx AI Support' && <Bot className="w-3 h-3 text-[#C084FC]" />}
+                    <span className={clsx(
+                      'text-xs font-medium',
+                      m.sender_name === 'ConnectEx AI Support' ? 'text-[#C084FC]' :
+                      m.sender_type === 'admin' ? 'text-[#00C9A7]' : 'text-white'
+                    )}>
                       {m.sender_name}
                     </span>
                     <span className="text-xs text-[var(--color-text-faint)]">

@@ -115,8 +115,13 @@ export interface Ticket {
   priority: 'low' | 'medium' | 'high' | 'urgent'
   status: 'open' | 'in_progress' | 'waiting' | 'resolved' | 'closed'
   image_url: string | null
+  contact_id: string | null
+  ai_response: string | null
+  ai_handled: boolean
+  routed_to_mark: boolean
   created_at: string
   updated_at: string
+  contact?: { id: string; name: string; email: string | null } | null
 }
 
 export const TICKET_STATUS_CONFIG: Record<string, { label: string; color: string }> = {
