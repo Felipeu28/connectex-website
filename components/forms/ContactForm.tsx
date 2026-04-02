@@ -2,6 +2,7 @@
 
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
+import Link from 'next/link'
 import { Button } from '@/components/ui/Button'
 
 interface FormData {
@@ -85,8 +86,8 @@ export function ContactForm({ defaultDomain = '' }: { defaultDomain?: string }) 
   if (submitted) {
     return (
       <div className="text-center py-12">
-        <div className="w-16 h-16 rounded-full bg-[#00D4AA]/15 border border-[#00D4AA]/30 flex items-center justify-center mx-auto mb-6">
-          <svg className="w-8 h-8 text-[#00D4AA]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+        <div className="w-16 h-16 rounded-full bg-[#00C9A7]/15 border border-[#00C9A7]/30 flex items-center justify-center mx-auto mb-6">
+          <svg className="w-8 h-8 text-[#00C9A7]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="m4.5 12.75 6 6 9-13.5" />
           </svg>
         </div>
@@ -96,9 +97,9 @@ export function ContactForm({ defaultDomain = '' }: { defaultDomain?: string }) 
         </p>
         <p className="text-sm text-[var(--text-muted)]">
           In the meantime, download our{' '}
-          <a href="/resources/smb-cybersecurity-checklist-2026" className="text-[#00D4AA] hover:underline">
+          <Link href="/resources/smb-cybersecurity-checklist-2026" className="text-[#00C9A7] hover:underline">
             SMB Cybersecurity Checklist →
-          </a>
+          </Link>
         </p>
       </div>
     )
@@ -112,7 +113,7 @@ export function ContactForm({ defaultDomain = '' }: { defaultDomain?: string }) 
           <div
             key={n}
             className="flex-1 h-1 rounded-full transition-all duration-300"
-            style={{ background: n <= step ? '#00D4AA' : 'rgba(255,255,255,0.1)' }}
+            style={{ background: n <= step ? '#00C9A7' : 'rgba(255,255,255,0.1)' }}
           />
         ))}
       </div>
@@ -132,7 +133,7 @@ export function ContactForm({ defaultDomain = '' }: { defaultDomain?: string }) 
               type="text"
               autoComplete="name"
               {...register('name', { required: 'Required' })}
-              className="w-full glass rounded-xl px-4 py-3 text-white text-sm placeholder-[var(--text-muted)] focus:outline-none focus:ring-2 focus:ring-[#00D4AA]/40 border border-white/10"
+              className="w-full glass rounded-xl px-4 py-3 text-white text-sm placeholder-[var(--text-muted)] focus:outline-none focus:ring-2 focus:ring-[#00C9A7]/40 border border-white/10"
               placeholder="Mark Johnson"
             />
             {errors.name && <p className="text-xs text-[#FF6B6B] mt-1">{errors.name.message}</p>}
@@ -145,7 +146,7 @@ export function ContactForm({ defaultDomain = '' }: { defaultDomain?: string }) 
               type="text"
               autoComplete="organization"
               {...register('company', { required: 'Required' })}
-              className="w-full glass rounded-xl px-4 py-3 text-white text-sm placeholder-[var(--text-muted)] focus:outline-none focus:ring-2 focus:ring-[#00D4AA]/40 border border-white/10"
+              className="w-full glass rounded-xl px-4 py-3 text-white text-sm placeholder-[var(--text-muted)] focus:outline-none focus:ring-2 focus:ring-[#00C9A7]/40 border border-white/10"
               placeholder="Acme Corp"
             />
             {errors.company && <p className="text-xs text-[#FF6B6B] mt-1">{errors.company.message}</p>}
@@ -154,13 +155,13 @@ export function ContactForm({ defaultDomain = '' }: { defaultDomain?: string }) 
           <div>
             <label className="block text-sm font-medium text-[var(--text-muted)] mb-2" htmlFor="domain">
               Company domain
-              <span className="ml-2 text-xs text-[#00D4AA]">(We&rsquo;ll scan this for vulnerabilities)</span>
+              <span className="ml-2 text-xs text-[#00C9A7]">(We&rsquo;ll scan this for vulnerabilities)</span>
             </label>
             <input
               id="domain"
               type="text"
               {...register('domain', { required: 'Required' })}
-              className="w-full glass rounded-xl px-4 py-3 text-white text-sm placeholder-[var(--text-muted)] focus:outline-none focus:ring-2 focus:ring-[#00D4AA]/40 border border-white/10"
+              className="w-full glass rounded-xl px-4 py-3 text-white text-sm placeholder-[var(--text-muted)] focus:outline-none focus:ring-2 focus:ring-[#00C9A7]/40 border border-white/10"
               placeholder="yourbusiness.com"
             />
             {errors.domain && <p className="text-xs text-[#FF6B6B] mt-1">{errors.domain.message}</p>}
@@ -188,7 +189,7 @@ export function ContactForm({ defaultDomain = '' }: { defaultDomain?: string }) 
             <select
               id="challenge"
               {...register('challenge', { required: 'Required' })}
-              className="w-full glass rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:ring-2 focus:ring-[#00D4AA]/40 border border-white/10 bg-[#0F1B2D]"
+              className="w-full glass rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:ring-2 focus:ring-[#00C9A7]/40 border border-white/10 bg-[#0F1B2D]"
             >
               <option value="" className="bg-[#0F1B2D]">Select your challenge</option>
               {challenges.map((c) => (
@@ -203,7 +204,7 @@ export function ContactForm({ defaultDomain = '' }: { defaultDomain?: string }) 
             <select
               id="timeline"
               {...register('timeline', { required: 'Required' })}
-              className="w-full glass rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:ring-2 focus:ring-[#00D4AA]/40 border border-white/10 bg-[#0F1B2D]"
+              className="w-full glass rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:ring-2 focus:ring-[#00C9A7]/40 border border-white/10 bg-[#0F1B2D]"
             >
               <option value="" className="bg-[#0F1B2D]">When do you need this resolved?</option>
               {timelines.map((t) => (
@@ -242,7 +243,7 @@ export function ContactForm({ defaultDomain = '' }: { defaultDomain?: string }) 
                 required: 'Required',
                 pattern: { value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/, message: 'Enter a valid email' },
               })}
-              className="w-full glass rounded-xl px-4 py-3 text-white text-sm placeholder-[var(--text-muted)] focus:outline-none focus:ring-2 focus:ring-[#00D4AA]/40 border border-white/10"
+              className="w-full glass rounded-xl px-4 py-3 text-white text-sm placeholder-[var(--text-muted)] focus:outline-none focus:ring-2 focus:ring-[#00C9A7]/40 border border-white/10"
               placeholder="you@yourcompany.com"
             />
             {errors.email && <p className="text-xs text-[#FF6B6B] mt-1">{errors.email.message}</p>}
@@ -257,7 +258,7 @@ export function ContactForm({ defaultDomain = '' }: { defaultDomain?: string }) 
               type="tel"
               autoComplete="tel"
               {...register('phone')}
-              className="w-full glass rounded-xl px-4 py-3 text-white text-sm placeholder-[var(--text-muted)] focus:outline-none focus:ring-2 focus:ring-[#00D4AA]/40 border border-white/10"
+              className="w-full glass rounded-xl px-4 py-3 text-white text-sm placeholder-[var(--text-muted)] focus:outline-none focus:ring-2 focus:ring-[#00C9A7]/40 border border-white/10"
               placeholder="(512) 000-0000"
             />
           </div>
@@ -267,7 +268,7 @@ export function ContactForm({ defaultDomain = '' }: { defaultDomain?: string }) 
             <select
               id="how_heard"
               {...register('how_heard')}
-              className="w-full glass rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:ring-2 focus:ring-[#00D4AA]/40 border border-white/10 bg-[#0F1B2D]"
+              className="w-full glass rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:ring-2 focus:ring-[#00C9A7]/40 border border-white/10 bg-[#0F1B2D]"
             >
               <option value="" className="bg-[#0F1B2D]">Select one</option>
               {howHeard.map((h) => (

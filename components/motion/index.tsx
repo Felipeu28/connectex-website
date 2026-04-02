@@ -1,6 +1,6 @@
 'use client'
 
-import { useRef } from 'react'
+import { useRef, useEffect } from 'react'
 import {
   motion,
   useInView,
@@ -105,23 +105,28 @@ export function AnimatedCounter({
   const displayRef = useRef<HTMLSpanElement>(null)
 
   // Animate when in view
-  if (isInView && motionValue.get() === from) {
-    if (shouldReduce) {
-      motionValue.set(to)
-    } else {
-      animate(motionValue, to, {
-        duration,
-        ease: [0.25, 0.4, 0.25, 1],
-      })
+  useEffect(() => {
+    if (isInView && motionValue.get() === from) {
+      if (shouldReduce) {
+        motionValue.set(to)
+      } else {
+        animate(motionValue, to, {
+          duration,
+          ease: [0.25, 0.4, 0.25, 1],
+        })
+      }
     }
-  }
+  }, [isInView, motionValue, from, to, duration, shouldReduce])
 
   // Subscribe to rounded value changes
-  rounded.on('change', (v) => {
-    if (displayRef.current) {
-      displayRef.current.textContent = `${prefix}${v.toLocaleString()}${suffix}`
-    }
-  })
+  useEffect(() => {
+    const unsubscribe = rounded.on('change', (v) => {
+      if (displayRef.current) {
+        displayRef.current.textContent = `${prefix}${v.toLocaleString()}${suffix}`
+      }
+    })
+    return unsubscribe
+  }, [rounded, prefix, suffix])
 
   return (
     <span ref={ref} className={className}>

@@ -8,8 +8,8 @@ interface BadgeProps {
 }
 
 const variants = {
-  accent: 'bg-[#00D4AA]/10 text-[#00D4AA] border border-[#00D4AA]/20',
-  primary: 'bg-[#1F4E78]/20 text-[#60A5FA] border border-[#1F4E78]/30',
+  accent: 'bg-[#00C9A7]/10 text-[#00C9A7] border border-[#00C9A7]/20',
+  primary: 'bg-[#8B2BE2]/20 text-[#60A5FA] border border-[#8B2BE2]/30',
   cta: 'bg-[#FF6B6B]/10 text-[#FF6B6B] border border-[#FF6B6B]/20',
   muted: 'bg-white/5 text-[#94A3B8] border border-white/10',
   outline: 'bg-transparent text-[#94A3B8] border border-white/20',

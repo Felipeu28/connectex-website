@@ -14,7 +14,7 @@ export const metadata = genMeta({
 
 const certifications = [
   { name: 'Verizon Partner', color: '#FF6B6B' },
-  { name: 'AppDirect Advisor', color: '#00D4AA' },
+  { name: 'AppDirect Advisor', color: '#00C9A7' },
   { name: 'Microsoft Partner', color: '#60A5FA' },
   { name: '20+ Years Experience', color: '#A78BFA' },
 ]
@@ -25,7 +25,7 @@ const values: { Icon: LucideIcon; title: string; description: string; color: str
     title: 'Vendor-neutral, always',
     description:
       'ConnectEx earns commissions from vendors — which means we only win when you adopt the right solution and stay happy. There\'s no incentive to oversell or lock you in.',
-    color: '#00D4AA',
+    color: '#00C9A7',
   },
   {
     Icon: Users,
@@ -62,7 +62,7 @@ export default function AboutPage() {
       <section className="pt-32 pb-20 px-4 sm:px-6 grid-bg">
         <div className="max-w-6xl mx-auto grid md:grid-cols-2 gap-12 items-center">
           <div>
-            <p className="text-[#00D4AA] text-sm font-semibold uppercase tracking-widest mb-4">About ConnectEx</p>
+            <p className="text-[#00C9A7] text-sm font-semibold uppercase tracking-widest mb-4">About ConnectEx</p>
             <h1 className="text-4xl sm:text-5xl font-bold text-[var(--text)] leading-tight mb-5">
               The technology advisor Austin SMBs didn&rsquo;t know they needed
             </h1>
@@ -87,9 +87,9 @@ export default function AboutPage() {
             <div className="relative">
               <div className="w-72 h-80 rounded-3xl glass border border-white/10 flex items-center justify-center overflow-hidden">
                 {/* Placeholder professional headshot area */}
-                <div className="absolute inset-0 bg-gradient-to-br from-[#1F4E78]/20 to-[#00D4AA]/10" />
+                <div className="absolute inset-0 bg-gradient-to-br from-[#8B2BE2]/20 to-[#00C9A7]/10" />
                 <div className="relative text-center">
-                  <div className="w-24 h-24 rounded-full bg-gradient-to-br from-[#00D4AA] to-[#1F4E78] flex items-center justify-center mx-auto mb-4 shadow-lg shadow-[#00D4AA]/20">
+                  <div className="w-24 h-24 rounded-full bg-gradient-to-br from-[#8B2BE2] to-[#00C9A7] flex items-center justify-center mx-auto mb-4 shadow-lg shadow-[#00C9A7]/20">
                     <span className="text-white text-3xl font-bold">M</span>
                   </div>
                   <p className="text-[var(--text)] font-semibold text-lg">Mark</p>
@@ -99,7 +99,7 @@ export default function AboutPage() {
                 </div>
               </div>
               {/* Glow */}
-              <div className="absolute -inset-4 bg-[#00D4AA]/5 rounded-[2rem] blur-2xl -z-10" />
+              <div className="absolute -inset-4 bg-[#00C9A7]/5 rounded-[2rem] blur-2xl -z-10" />
             </div>
           </div>
         </div>

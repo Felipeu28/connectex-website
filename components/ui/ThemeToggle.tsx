@@ -1,24 +1,46 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useCallback, useSyncExternalStore } from 'react'
+
+let listeners: Array<() => void> = []
+
+function emitChange() {
+  for (const listener of listeners) {
+    listener()
+  }
+}
+
+function subscribe(callback: () => void) {
+  listeners.push(callback)
+  return () => {
+    listeners = listeners.filter((l) => l !== callback)
+  }
+}
+
+function getSnapshot(): boolean {
+  if (typeof window === 'undefined') return true
+  const saved = localStorage.getItem('theme')
+  const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
+  return saved ? saved === 'dark' : prefersDark
+}
+
+function getServerSnapshot(): boolean {
+  return true
+}
 
 export function ThemeToggle() {
-  const [dark, setDark] = useState(true)
+  const dark = useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot)
 
   useEffect(() => {
-    const saved = localStorage.getItem('theme')
-    const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches
-    const isDark = saved ? saved === 'dark' : prefersDark
-    setDark(isDark)
-    document.documentElement.classList.toggle('light', !isDark)
-  }, [])
+    document.documentElement.classList.toggle('light', !dark)
+  }, [dark])
 
-  function toggle() {
-    const next = !dark
-    setDark(next)
-    document.documentElement.classList.toggle('light', !next)
+  const toggle = useCallback(() => {
+    const next = !getSnapshot()
     localStorage.setItem('theme', next ? 'dark' : 'light')
-  }
+    document.documentElement.classList.toggle('light', !next)
+    emitChange()
+  }, [])
 
   return (
     <button

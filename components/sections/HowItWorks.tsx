@@ -16,7 +16,7 @@ import { useInView } from 'framer-motion'
 const steps: { number: string; color: string; title: string; description: string; detail: string; Icon: LucideIcon }[] = [
   {
     number: '01',
-    color: '#00D4AA',
+    color: '#00C9A7',
     title: 'Discover',
     description:
       'We run a free vulnerability and technology assessment on your business — showing you exactly where your gaps are, in plain language.',
@@ -53,7 +53,7 @@ export function HowItWorks() {
       <div className="max-w-7xl mx-auto">
         <MotionReveal>
           <div className="text-center mb-14">
-            <p className="text-[#00D4AA] text-sm font-semibold uppercase tracking-widest mb-3">How ConnectEx Works</p>
+            <p className="text-[#00C9A7] text-sm font-semibold uppercase tracking-widest mb-3">How ConnectEx Works</p>
             <h2 className="text-3xl sm:text-4xl font-bold text-[var(--text)] mb-4">
               Simple process. Serious results.
             </h2>
@@ -69,7 +69,7 @@ export function HowItWorks() {
             <svg width="100%" height="2" className="overflow-visible">
               <defs>
                 <linearGradient id="line-gradient" x1="0%" y1="0%" x2="100%" y2="0%">
-                  <stop offset="0%" stopColor="#00D4AA" stopOpacity="0.4" />
+                  <stop offset="0%" stopColor="#00C9A7" stopOpacity="0.4" />
                   <stop offset="50%" stopColor="#60A5FA" stopOpacity="0.4" />
                   <stop offset="100%" stopColor="#FF6B6B" stopOpacity="0.4" />
                 </linearGradient>

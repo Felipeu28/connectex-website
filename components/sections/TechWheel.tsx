@@ -21,7 +21,7 @@ interface Segment {
 }
 
 const segments: Segment[] = [
-  { id: 'managed-it', label: 'Managed IT', shortLabel: 'IT', href: '/solutions/managed-it', color: '#00D4AA', description: 'Full IT management & helpdesk', Icon: Monitor },
+  { id: 'managed-it', label: 'Managed IT', shortLabel: 'IT', href: '/solutions/managed-it', color: '#00C9A7', description: 'Full IT management & helpdesk', Icon: Monitor },
   { id: 'cybersecurity', label: 'Cybersecurity', shortLabel: 'Security', href: '/solutions/cybersecurity', color: '#FF6B6B', description: 'Threat detection & compliance', Icon: Shield },
   { id: 'cloud', label: 'Cloud & Collaboration', shortLabel: 'Cloud', href: '/solutions/cloud', color: '#60A5FA', description: 'Microsoft 365, Google Workspace & more', Icon: Cloud },
   { id: 'communications', label: 'Communications', shortLabel: 'UCaaS', href: '/solutions/communications', color: '#A78BFA', description: 'VoIP, UCaaS & business phone', Icon: Phone },
@@ -77,7 +77,7 @@ export function TechWheel() {
               </radialGradient>
             ))}
             <radialGradient id="center-grad" cx="50%" cy="50%" r="50%">
-              <stop offset="0%" stopColor="#1F4E78" />
+              <stop offset="0%" stopColor="#8B2BE2" />
               <stop offset="100%" stopColor="#0F1B2D" />
             </radialGradient>
           </defs>
@@ -150,8 +150,8 @@ export function TechWheel() {
           })}
 
           {/* Center circle */}
-          <circle cx={cx} cy={cy} r={innerR - 2} fill="url(#center-grad)" stroke="rgba(0,212,170,0.2)" strokeWidth={1.5} />
-          <circle cx={cx} cy={cy} r={innerR - 8} fill="none" stroke="rgba(0,212,170,0.08)" strokeWidth={1} />
+          <circle cx={cx} cy={cy} r={innerR - 2} fill="url(#center-grad)" stroke="rgba(0,201,167,0.2)" strokeWidth={1.5} />
+          <circle cx={cx} cy={cy} r={innerR - 8} fill="none" stroke="rgba(0,201,167,0.08)" strokeWidth={1} />
 
           {/* Center content */}
           {activeSegment ? (
@@ -163,7 +163,7 @@ export function TechWheel() {
             </>
           ) : (
             <>
-              <text x={cx} y={cy - 8} textAnchor="middle" fontSize="11" fontWeight="700" fill="#00D4AA" style={{ userSelect: 'none' }}>Connect</text>
+              <text x={cx} y={cy - 8} textAnchor="middle" fontSize="11" fontWeight="700" fill="#00C9A7" style={{ userSelect: 'none' }}>Connect</text>
               <text x={cx} y={cy + 8} textAnchor="middle" fontSize="11" fontWeight="700" fill="#FFFFFF" style={{ userSelect: 'none' }}>Ex</text>
               <text x={cx} y={cy + 24} textAnchor="middle" fontSize="7.5" fill="#94A3B8" style={{ userSelect: 'none' }}>600+ Providers</text>
             </>

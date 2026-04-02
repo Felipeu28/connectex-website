@@ -1,9 +1,7 @@
 import type { Metadata } from 'next'
 import { Inter } from 'next/font/google'
 import './globals.css'
-import { Navbar } from '@/components/ui/Navbar'
-import { Footer } from '@/components/ui/Footer'
-import { ScrollToTop } from '@/components/ui/ScrollToTop'
+import { MarketingShell } from '@/components/ui/MarketingShell'
 import { localBusinessSchema } from '@/lib/schema'
 
 const inter = Inter({
@@ -58,12 +56,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         />
       </head>
       <body className={`${inter.variable} font-sans antialiased min-h-screen flex flex-col`}>
-        <Navbar />
-        <div className="flex-1">
+        <MarketingShell>
           {children}
-        </div>
-        <Footer />
-        <ScrollToTop />
+        </MarketingShell>
       </body>
     </html>
   )

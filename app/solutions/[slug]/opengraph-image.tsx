@@ -14,7 +14,7 @@ export default async function OGImage({ params }: { params: Promise<{ slug: stri
   const solution = getSolution(slug)
 
   const title = solution?.title ?? 'Technology Solutions'
-  const color = solution?.color ?? '#00D4AA'
+  const color = solution?.color ?? '#00C9A7'
   const tagline = solution?.tagline ?? 'Vendor-neutral technology advisor for Austin SMBs'
 
   return new ImageResponse(

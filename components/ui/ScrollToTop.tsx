@@ -28,7 +28,7 @@ export function ScrollToTop() {
           transition={{ duration: 0.2 }}
           onClick={scrollToTop}
           aria-label="Scroll to top"
-          className="fixed bottom-6 right-6 z-40 w-10 h-10 rounded-full bg-[#00D4AA]/20 border border-[#00D4AA]/30 backdrop-blur-sm flex items-center justify-center text-[#00D4AA] hover:bg-[#00D4AA]/30 transition-colors"
+          className="fixed bottom-6 right-6 z-40 w-10 h-10 rounded-full bg-[#00C9A7]/20 border border-[#00C9A7]/30 backdrop-blur-sm flex items-center justify-center text-[#00C9A7] hover:bg-[#00C9A7]/30 transition-colors"
         >
           <ChevronDown className="w-4 h-4 rotate-180" strokeWidth={2} />
         </motion.button>

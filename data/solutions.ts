@@ -25,7 +25,7 @@ export const solutions: Solution[] = [
     metaDescription:
       'Managed IT services for Austin TX small business. ConnectEx sources the right IT provider from 600+ vendors — proactive monitoring, helpdesk, and IT strategy.',
     icon: 'Monitor',
-    color: '#00D4AA',
+    color: '#00C9A7',
     features: [
       '24/7 proactive network monitoring',
       'Unlimited helpdesk support',

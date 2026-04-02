@@ -32,7 +32,7 @@ export default function PartnersPage() {
       {/* Hero */}
       <section className="pt-32 pb-20 px-4 sm:px-6 grid-bg">
         <div className="max-w-4xl mx-auto text-center">
-          <p className="text-[#00D4AA] text-sm font-semibold uppercase tracking-widest mb-4">Partners & Referrals</p>
+          <p className="text-[#00C9A7] text-sm font-semibold uppercase tracking-widest mb-4">Partners & Referrals</p>
           <h1 className="text-4xl sm:text-5xl font-bold text-white leading-tight mb-5">
             Know a business that needs technology help?
           </h1>
@@ -60,8 +60,8 @@ export default function PartnersPage() {
                 ['Local knowledge', '20+ years in Central Texas business — we know the market'],
               ].map(([title, desc]) => (
                 <div key={title} className="flex items-start gap-3">
-                  <div className="w-6 h-6 rounded-lg bg-[#00D4AA]/15 border border-[#00D4AA]/30 flex items-center justify-center shrink-0 mt-0.5">
-                    <svg className="w-3.5 h-3.5 text-[#00D4AA]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                  <div className="w-6 h-6 rounded-lg bg-[#00C9A7]/15 border border-[#00C9A7]/30 flex items-center justify-center shrink-0 mt-0.5">
+                    <svg className="w-3.5 h-3.5 text-[#00C9A7]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="m4.5 12.75 6 6 9-13.5" />
                     </svg>
                   </div>
@@ -81,7 +81,7 @@ export default function PartnersPage() {
               </p>
               <a
                 href="mailto:mark@connectex.net?subject=Partner inquiry"
-                className="text-sm font-medium text-[#00D4AA] hover:text-white transition-colors"
+                className="text-sm font-medium text-[#00C9A7] hover:text-white transition-colors"
               >
                 Email mark@connectex.net →
               </a>

@@ -45,9 +45,9 @@ export default async function OGImage({ params }: { params: Promise<{ slug: stri
             style={{
               fontSize: 16,
               fontWeight: 600,
-              color: '#00D4AA',
+              color: '#00C9A7',
               padding: '4px 12px',
-              border: '1px solid #00D4AA',
+              border: '1px solid #00C9A7',
               borderRadius: '999px',
             }}
           >
@@ -92,7 +92,7 @@ export default async function OGImage({ params }: { params: Promise<{ slug: stri
             display: 'flex',
             width: '100%',
             height: '4px',
-            background: 'linear-gradient(90deg, #00D4AA 0%, #00D4AA 40%, transparent 100%)',
+            background: 'linear-gradient(90deg, #00C9A7 0%, #00C9A7 40%, transparent 100%)',
             borderRadius: '2px',
           }}
         />

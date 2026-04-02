@@ -6,8 +6,6 @@ import { Badge } from '@/components/ui/Badge'
 import { ArrowRight } from '@/components/ui/Icons'
 import { HeroDashboard } from './HeroDashboard'
 import {
-  motion,
-  useReducedMotion,
   MotionReveal,
   StaggerContainer,
   StaggerItem,
@@ -23,7 +21,6 @@ const trustItems = [
 
 export function HeroSection() {
   const [domain, setDomain] = useState('')
-  const shouldReduce = useReducedMotion()
 
   return (
     <section className="relative min-h-screen flex items-center overflow-hidden">
@@ -32,8 +29,8 @@ export function HeroSection() {
       <div className="absolute inset-0 grid-bg opacity-60" />
 
       {/* Gradient orbs */}
-      <div className="absolute top-1/4 left-1/6 w-[500px] h-[500px] bg-[#00D4AA]/6 rounded-full blur-[120px] pointer-events-none" />
-      <div className="absolute bottom-1/4 right-1/6 w-[400px] h-[400px] bg-[#1F4E78]/12 rounded-full blur-[100px] pointer-events-none" />
+      <div className="absolute top-1/4 left-1/6 w-[500px] h-[500px] bg-[#00C9A7]/6 rounded-full blur-[120px] pointer-events-none" />
+      <div className="absolute bottom-1/4 right-1/6 w-[400px] h-[400px] bg-[#8B2BE2]/12 rounded-full blur-[100px] pointer-events-none" />
       <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-[#FF6B6B]/3 rounded-full blur-[140px] pointer-events-none" />
 
 
@@ -44,7 +41,7 @@ export function HeroSection() {
           <MotionReveal direction="left" delay={0}>
             <div className="flex items-center gap-3 mb-8">
               <Badge variant="accent" size="md">
-                <span className="w-1.5 h-1.5 rounded-full bg-[#00D4AA] mr-2 animate-pulse" />
+                <span className="w-1.5 h-1.5 rounded-full bg-[#00C9A7] mr-2 animate-pulse" />
                 Central Texas Technology Advisor
               </Badge>
             </div>
@@ -130,7 +127,7 @@ export function HeroSection() {
             {trustItems.map((item) => (
               <StaggerItem key={item}>
                 <div className="flex items-center gap-2.5 text-sm text-[var(--text-muted)] font-medium">
-                  <span className="w-1.5 h-1.5 rounded-full bg-[#00D4AA]" />
+                  <span className="w-1.5 h-1.5 rounded-full bg-[#00C9A7]" />
                   {item}
                 </div>
               </StaggerItem>

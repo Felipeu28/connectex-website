@@ -7,9 +7,12 @@
   --color-navy:        #0F1B2D;
   --color-navy-card:   #162030;
   --color-navy-border: #1e2f45;
-  --color-primary:     #1F4E78;
-  --color-accent:      #00D4AA;
-  --color-accent-dim:  #00b890;
+  --color-primary:     #8B2BE2;
+  --color-accent:      #00C9A7;
+  --color-accent-dim:  #00b394;
+  --color-brand-purple: #8B2BE2;
+  --color-brand-blue:   #4B6CF7;
+  --color-brand-teal:   #00C9A7;
   --color-cta:         #FF6B6B;
   --color-cta-hover:   #ff5252;
 
@@ -100,14 +103,14 @@ body {
 /* ─── Grid Background ───────────────────────────────────────── */
 .grid-bg {
   background-image:
-    linear-gradient(rgba(0, 212, 170, 0.03) 1px, transparent 1px),
-    linear-gradient(90deg, rgba(0, 212, 170, 0.03) 1px, transparent 1px);
+    linear-gradient(rgba(0, 201, 167, 0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 201, 167, 0.03) 1px, transparent 1px);
   background-size: 60px 60px;
 }
 
 /* ─── Gradient Text ─────────────────────────────────────────── */
 .gradient-text {
-  background: linear-gradient(135deg, #00D4AA 0%, #1F4E78 100%);
+  background: linear-gradient(135deg, #8B2BE2, #4B6CF7, #00C9A7);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -164,7 +167,7 @@ body {
   inset: 0;
   border-radius: inherit;
   padding: 1px;
-  background: linear-gradient(135deg, rgba(0, 212, 170, 0.3), rgba(31, 78, 120, 0.3));
+  background: linear-gradient(135deg, rgba(139, 43, 226, 0.3), rgba(75, 108, 247, 0.3), rgba(0, 201, 167, 0.3));
   mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
   mask-composite: exclude;
   -webkit-mask-composite: xor;
@@ -221,7 +224,7 @@ body {
 
 /* ─── Selection ─────────────────────────────────────────────── */
 ::selection {
-  background: rgba(0, 212, 170, 0.2);
+  background: rgba(0, 201, 167, 0.2);
   color: var(--color-accent);
 }
 

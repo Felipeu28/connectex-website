@@ -28,7 +28,7 @@ export function VulnScanCTA() {
       <div className="max-w-5xl mx-auto">
         <div className="relative glass rounded-3xl overflow-hidden border border-white/8">
           {/* Background glow — animated scale pulse */}
-          <div className="absolute inset-0 bg-gradient-to-br from-[#FF6B6B]/5 via-transparent to-[#1F4E78]/10 pointer-events-none" />
+          <div className="absolute inset-0 bg-gradient-to-br from-[#FF6B6B]/5 via-transparent to-[#8B2BE2]/10 pointer-events-none" />
           <motion.div
             className="absolute top-0 right-0 w-64 h-64 bg-[#FF6B6B]/8 rounded-full blur-3xl pointer-events-none"
             animate={shouldReduce ? {} : { scale: [1, 1.05, 1] }}
@@ -70,7 +70,7 @@ export function VulnScanCTA() {
                     {findings.map((finding, i) => (
                       <StaggerItem key={i}>
                         <li className="flex items-start gap-3 text-sm text-[var(--text-muted)]">
-                          <Check className="w-4 h-4 text-[#00D4AA] shrink-0 mt-0.5" strokeWidth={2.5} />
+                          <Check className="w-4 h-4 text-[#00C9A7] shrink-0 mt-0.5" strokeWidth={2.5} />
                           {finding}
                         </li>
                       </StaggerItem>

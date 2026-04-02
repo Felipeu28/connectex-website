@@ -25,7 +25,7 @@ const cards: Card[] = [
     href: '/solutions/managed-it',
     title: 'Managed IT',
     description: 'Your outsourced IT department. Proactive monitoring, helpdesk, and strategic planning — without the overhead.',
-    color: '#00D4AA',
+    color: '#00C9A7',
     size: 'large',
     stat: '24/7 monitoring',
     Icon: Monitor,
@@ -85,14 +85,14 @@ export function SolutionsBento() {
       <div className="max-w-7xl mx-auto">
         <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-10">
           <div>
-            <p className="text-[#00D4AA] text-sm font-semibold uppercase tracking-widest mb-3">Solutions</p>
+            <p className="text-[#00C9A7] text-sm font-semibold uppercase tracking-widest mb-3">Solutions</p>
             <h2 className="text-3xl sm:text-4xl font-bold text-[var(--text)]">
               Every technology your business needs
             </h2>
           </div>
           <Link
             href="/solutions"
-            className="text-sm font-medium text-[#00D4AA] hover:text-[var(--text)] transition-colors flex items-center gap-1 shrink-0"
+            className="text-sm font-medium text-[#00C9A7] hover:text-[var(--text)] transition-colors flex items-center gap-1 shrink-0"
           >
             View all solutions
             <ArrowRight className="w-4 h-4" />

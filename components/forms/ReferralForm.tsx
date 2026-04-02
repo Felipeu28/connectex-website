@@ -53,8 +53,8 @@ export function ReferralForm() {
   if (submitted) {
     return (
       <div className="text-center py-8">
-        <div className="w-12 h-12 rounded-full bg-[#00D4AA]/15 border border-[#00D4AA]/30 flex items-center justify-center mx-auto mb-4">
-          <svg className="w-6 h-6 text-[#00D4AA]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+        <div className="w-12 h-12 rounded-full bg-[#00C9A7]/15 border border-[#00C9A7]/30 flex items-center justify-center mx-auto mb-4">
+          <svg className="w-6 h-6 text-[#00C9A7]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
             <path strokeLinecap="round" strokeLinejoin="round" d="m4.5 12.75 6 6 9-13.5" />
           </svg>
         </div>
@@ -73,7 +73,7 @@ export function ReferralForm() {
             id="referrer_name"
             type="text"
             {...register('referrer_name', { required: 'Required' })}
-            className="w-full glass rounded-xl px-4 py-3 text-white text-sm placeholder-[var(--text-muted)] focus:outline-none focus:ring-2 focus:ring-[#00D4AA]/40 border border-white/10"
+            className="w-full glass rounded-xl px-4 py-3 text-white text-sm placeholder-[var(--text-muted)] focus:outline-none focus:ring-2 focus:ring-[#00C9A7]/40 border border-white/10"
             placeholder="Your name"
           />
           {errors.referrer_name && <p className="text-xs text-[#FF6B6B] mt-1">{errors.referrer_name.message}</p>}
@@ -84,7 +84,7 @@ export function ReferralForm() {
             id="referrer_email"
             type="email"
             {...register('referrer_email')}
-            className="w-full glass rounded-xl px-4 py-3 text-white text-sm placeholder-[var(--text-muted)] focus:outline-none focus:ring-2 focus:ring-[#00D4AA]/40 border border-white/10"
+            className="w-full glass rounded-xl px-4 py-3 text-white text-sm placeholder-[var(--text-muted)] focus:outline-none focus:ring-2 focus:ring-[#00C9A7]/40 border border-white/10"
             placeholder="you@company.com"
           />
         </div>
@@ -100,7 +100,7 @@ export function ReferralForm() {
           id="business_name"
           type="text"
           {...register('business_name', { required: 'Required' })}
-          className="w-full glass rounded-xl px-4 py-3 text-white text-sm placeholder-[var(--text-muted)] focus:outline-none focus:ring-2 focus:ring-[#00D4AA]/40 border border-white/10"
+          className="w-full glass rounded-xl px-4 py-3 text-white text-sm placeholder-[var(--text-muted)] focus:outline-none focus:ring-2 focus:ring-[#00C9A7]/40 border border-white/10"
           placeholder="Acme Corp"
         />
         {errors.business_name && <p className="text-xs text-[#FF6B6B] mt-1">{errors.business_name.message}</p>}
@@ -113,7 +113,7 @@ export function ReferralForm() {
             id="contact_name"
             type="text"
             {...register('contact_name', { required: 'Required' })}
-            className="w-full glass rounded-xl px-4 py-3 text-white text-sm placeholder-[var(--text-muted)] focus:outline-none focus:ring-2 focus:ring-[#00D4AA]/40 border border-white/10"
+            className="w-full glass rounded-xl px-4 py-3 text-white text-sm placeholder-[var(--text-muted)] focus:outline-none focus:ring-2 focus:ring-[#00C9A7]/40 border border-white/10"
             placeholder="Jane Smith"
           />
           {errors.contact_name && <p className="text-xs text-[#FF6B6B] mt-1">{errors.contact_name.message}</p>}
@@ -127,7 +127,7 @@ export function ReferralForm() {
               required: 'Required',
               pattern: { value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/, message: 'Invalid email' },
             })}
-            className="w-full glass rounded-xl px-4 py-3 text-white text-sm placeholder-[var(--text-muted)] focus:outline-none focus:ring-2 focus:ring-[#00D4AA]/40 border border-white/10"
+            className="w-full glass rounded-xl px-4 py-3 text-white text-sm placeholder-[var(--text-muted)] focus:outline-none focus:ring-2 focus:ring-[#00C9A7]/40 border border-white/10"
             placeholder="jane@acme.com"
           />
           {errors.contact_email && <p className="text-xs text-[#FF6B6B] mt-1">{errors.contact_email.message}</p>}
@@ -140,7 +140,7 @@ export function ReferralForm() {
           id="contact_phone"
           type="tel"
           {...register('contact_phone')}
-          className="w-full glass rounded-xl px-4 py-3 text-white text-sm placeholder-[var(--text-muted)] focus:outline-none focus:ring-2 focus:ring-[#00D4AA]/40 border border-white/10"
+          className="w-full glass rounded-xl px-4 py-3 text-white text-sm placeholder-[var(--text-muted)] focus:outline-none focus:ring-2 focus:ring-[#00C9A7]/40 border border-white/10"
           placeholder="(512) 000-0000"
         />
       </div>
@@ -150,7 +150,7 @@ export function ReferralForm() {
         <select
           id="service_needed"
           {...register('service_needed', { required: 'Required' })}
-          className="w-full glass rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:ring-2 focus:ring-[#00D4AA]/40 border border-white/10 bg-[#0F1B2D]"
+          className="w-full glass rounded-xl px-4 py-3 text-white text-sm focus:outline-none focus:ring-2 focus:ring-[#00C9A7]/40 border border-white/10 bg-[#0F1B2D]"
         >
           <option value="" className="bg-[#0F1B2D]">Select service</option>
           {services.map((s) => (
@@ -166,7 +166,7 @@ export function ReferralForm() {
           id="notes"
           rows={3}
           {...register('notes')}
-          className="w-full glass rounded-xl px-4 py-3 text-white text-sm placeholder-[var(--text-muted)] focus:outline-none focus:ring-2 focus:ring-[#00D4AA]/40 border border-white/10 resize-none"
+          className="w-full glass rounded-xl px-4 py-3 text-white text-sm placeholder-[var(--text-muted)] focus:outline-none focus:ring-2 focus:ring-[#00C9A7]/40 border border-white/10 resize-none"
           placeholder="Any context that would help Mark — current challenges, budget range, urgency, etc."
         />
       </div>

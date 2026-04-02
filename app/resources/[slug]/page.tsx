@@ -96,7 +96,7 @@ export default async function PostPage({
             <span>/</span>
             <Link href="/resources" className="hover:text-white transition-colors">Resources</Link>
             <span>/</span>
-            <span className="text-[#00D4AA]">{post.category}</span>
+            <span className="text-[#00C9A7]">{post.category}</span>
           </nav>
 
           <div className="flex items-center gap-3 mb-5">
@@ -111,7 +111,7 @@ export default async function PostPage({
           <p className="text-lg text-[var(--text-muted)] leading-relaxed mb-8">{post.excerpt}</p>
 
           <div className="flex items-center gap-3 pb-8 border-b border-white/8">
-            <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[#00D4AA] to-[#1F4E78] flex items-center justify-center">
+            <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[#8B2BE2] to-[#00C9A7] flex items-center justify-center">
               <span className="text-white text-sm font-bold">M</span>
             </div>
             <div>
@@ -133,17 +133,17 @@ export default async function PostPage({
               prose-p:text-[var(--text-muted)] prose-p:leading-relaxed prose-p:mb-4
               prose-li:text-[var(--text-muted)]
               prose-strong:text-white
-              prose-a:text-[#00D4AA] prose-a:no-underline hover:prose-a:underline
-              prose-blockquote:border-l-[#00D4AA] prose-blockquote:text-[var(--text-muted)]
+              prose-a:text-[#00C9A7] prose-a:no-underline hover:prose-a:underline
+              prose-blockquote:border-l-[#00C9A7] prose-blockquote:text-[var(--text-muted)]
               prose-table:text-sm
               prose-th:text-white prose-th:font-semibold prose-th:py-3 prose-th:px-4
               prose-td:text-[var(--text-muted)] prose-td:py-3 prose-td:px-4
               prose-tr:border-b prose-tr:border-white/8
-              prose-code:text-[#00D4AA] prose-code:bg-[#00D4AA]/10 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded
+              prose-code:text-[#00C9A7] prose-code:bg-[#00C9A7]/10 prose-code:px-1.5 prose-code:py-0.5 prose-code:rounded
               [&_table]:glass [&_table]:rounded-xl [&_table]:border [&_table]:border-white/8 [&_table]:overflow-hidden [&_table]:w-full
               [&_thead]:bg-white/5
               [&_ul]:space-y-2 [&_ol]:space-y-2
-              [&_input[type=checkbox]]:accent-[#00D4AA]"
+              [&_input[type=checkbox]]:accent-[#00C9A7]"
             dangerouslySetInnerHTML={{ __html: markdownToHtml(post.body) }}
           />
 
@@ -168,10 +168,10 @@ export default async function PostPage({
                 <Link
                   key={p.slug}
                   href={`/resources/${p.slug}`}
-                  className="glass rounded-2xl p-6 border border-white/8 hover:border-[#00D4AA]/20 transition-all group"
+                  className="glass rounded-2xl p-6 border border-white/8 hover:border-[#00C9A7]/20 transition-all group"
                 >
                   <Badge variant="muted" size="sm" className="mb-3">{p.category}</Badge>
-                  <h3 className="font-semibold text-white text-sm leading-snug group-hover:text-[#00D4AA] transition-colors">
+                  <h3 className="font-semibold text-white text-sm leading-snug group-hover:text-[#00C9A7] transition-colors">
                     {p.title}
                   </h3>
                 </Link>

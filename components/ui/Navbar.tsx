@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import Link from 'next/link'
+import Image from 'next/image'
 import { usePathname } from 'next/navigation'
 import { clsx } from 'clsx'
 import { motion, AnimatePresence, useScroll, useReducedMotion } from 'framer-motion'
@@ -28,7 +29,10 @@ export function Navbar() {
     return () => window.removeEventListener('scroll', onScroll)
   }, [])
 
-  useEffect(() => { setMobileOpen(false) }, [pathname])
+  // Close mobile menu on route change
+  useEffect(() => {
+    requestAnimationFrame(() => setMobileOpen(false))
+  }, [pathname])
 
   return (
     <header
@@ -42,16 +46,22 @@ export function Navbar() {
       <nav className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
         {/* Logo */}
         <Link href="/" className="flex items-center gap-2.5 group" aria-label="ConnectEx home">
-          <motion.div
-            className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#00D4AA] to-[#1F4E78] flex items-center justify-center shadow-lg group-hover:shadow-[#00D4AA]/30 transition-shadow"
-            whileHover={shouldReduce ? {} : { scale: 1.05 }}
-            transition={{ duration: 0.15 }}
-          >
-            <span className="text-white font-bold text-sm">C</span>
-          </motion.div>
-          <span className="font-semibold text-[var(--text)] text-lg tracking-tight">
-            Connect<span className="text-[#00D4AA]">Ex</span>
-          </span>
+          <Image
+            src="/logos/logo-symbol.png"
+            alt=""
+            width={44}
+            height={44}
+            className="h-9 w-auto"
+            priority
+          />
+          <div className="flex flex-col leading-none">
+            <span className="text-[15px] font-bold tracking-tight text-white [.light_&]:text-gray-900">
+              CONNECTEX
+            </span>
+            <span className="text-[10px] font-semibold tracking-[0.2em] text-[#00C9A7]">
+              SOLUTIONS
+            </span>
+          </div>
         </Link>
 
         {/* Desktop nav */}
@@ -63,7 +73,7 @@ export function Navbar() {
               className={clsx(
                 'px-4 py-2 rounded-lg text-sm font-medium transition-colors duration-150',
                 pathname.startsWith(link.href)
-                  ? 'text-[#00D4AA] bg-[#00D4AA]/10'
+                  ? 'text-[#00C9A7] bg-[#00C9A7]/10'
                   : 'text-[var(--text-muted)] hover:text-[var(--text)] hover:bg-white/5'
               )}
             >
@@ -102,7 +112,7 @@ export function Navbar() {
 
       {/* Scroll progress bar */}
       <motion.div
-        className="absolute bottom-0 left-0 right-0 h-[2px] bg-[#00D4AA] origin-left"
+        className="absolute bottom-0 left-0 right-0 h-[2px] bg-[#00C9A7] origin-left"
         style={{ scaleX: scrollYProgress }}
       />
 
@@ -128,7 +138,7 @@ export function Navbar() {
                   className={clsx(
                     'block px-4 py-3 rounded-xl text-sm font-medium transition-colors',
                     pathname.startsWith(link.href)
-                      ? 'text-[#00D4AA] bg-[#00D4AA]/10'
+                      ? 'text-[#00C9A7] bg-[#00C9A7]/10'
                       : 'text-[var(--text-muted)] hover:text-[var(--text)] hover:bg-white/5'
                   )}
                 >

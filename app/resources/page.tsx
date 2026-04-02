@@ -13,8 +13,6 @@ export const metadata = genMeta({
   path: '/resources',
 })
 
-const categories = ['All', 'Cybersecurity', 'Strategy', 'Cost & Pricing']
-
 export default function ResourcesPage() {
   return (
     <>
@@ -33,7 +31,7 @@ export default function ResourcesPage() {
       {/* Hero */}
       <section className="pt-32 pb-16 px-4 sm:px-6 grid-bg">
         <div className="max-w-4xl mx-auto text-center">
-          <p className="text-[#00D4AA] text-sm font-semibold uppercase tracking-widest mb-4">Resources</p>
+          <p className="text-[#00C9A7] text-sm font-semibold uppercase tracking-widest mb-4">Resources</p>
           <h1 className="text-4xl sm:text-5xl font-bold text-white mb-5">
             Technology guides for Austin small business owners
           </h1>
@@ -51,7 +49,7 @@ export default function ResourcesPage() {
             <Link
               key={post.slug}
               href={`/resources/${post.slug}`}
-              className="block glass rounded-3xl p-10 border border-white/8 hover:border-[#00D4AA]/20 transition-all duration-200 group"
+              className="block glass rounded-3xl p-10 border border-white/8 hover:border-[#00C9A7]/20 transition-all duration-200 group"
             >
               <div className="grid md:grid-cols-2 gap-8 items-center">
                 <div>
@@ -60,11 +58,11 @@ export default function ResourcesPage() {
                     <span className="text-xs text-[var(--text-muted)]">{post.readTime} read</span>
                     <span className="text-xs text-[var(--text-muted)]">{post.publishedAt}</span>
                   </div>
-                  <h3 className="text-2xl sm:text-3xl font-bold text-white mb-4 group-hover:text-[#00D4AA] transition-colors">
+                  <h3 className="text-2xl sm:text-3xl font-bold text-white mb-4 group-hover:text-[#00C9A7] transition-colors">
                     {post.title}
                   </h3>
                   <p className="text-[var(--text-muted)] leading-relaxed mb-6">{post.excerpt}</p>
-                  <span className="text-sm font-medium text-[#00D4AA] flex items-center gap-1.5">
+                  <span className="text-sm font-medium text-[#00C9A7] flex items-center gap-1.5">
                     Read guide
                     <svg className="w-4 h-4 group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                       <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3" />
@@ -73,8 +71,8 @@ export default function ResourcesPage() {
                 </div>
                 <div className="glass rounded-2xl p-8 border border-white/8 hidden md:flex items-center justify-center">
                   <div className="text-center">
-                    <div className="w-16 h-16 rounded-2xl bg-[#00D4AA]/12 border border-[#00D4AA]/25 flex items-center justify-center mx-auto mb-4">
-                      <svg className="w-7 h-7 text-[#00D4AA]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                    <div className="w-16 h-16 rounded-2xl bg-[#00C9A7]/12 border border-[#00C9A7]/25 flex items-center justify-center mx-auto mb-4">
+                      <svg className="w-7 h-7 text-[#00C9A7]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
                         <path strokeLinecap="round" strokeLinejoin="round" d="M12 6.042A8.967 8.967 0 0 0 6 3.75c-1.052 0-2.062.18-3 .512v14.25A8.987 8.987 0 0 1 6 18c2.305 0 4.408.867 6 2.292m0-14.25a8.966 8.966 0 0 1 6-2.292c1.052 0 2.062.18 3 .512v14.25A8.987 8.987 0 0 0 18 18a8.967 8.967 0 0 0-6 2.292m0-14.25v14.25" />
                       </svg>
                     </div>
@@ -97,19 +95,19 @@ export default function ResourcesPage() {
               <Link
                 key={post.slug}
                 href={`/resources/${post.slug}`}
-                className="glass rounded-2xl p-7 border border-white/8 hover:border-[#00D4AA]/20 transition-all duration-200 hover:-translate-y-0.5 group flex flex-col"
+                className="glass rounded-2xl p-7 border border-white/8 hover:border-[#00C9A7]/20 transition-all duration-200 hover:-translate-y-0.5 group flex flex-col"
               >
                 <div className="flex items-center gap-2 mb-4">
                   <Badge variant="muted" size="sm">{post.category}</Badge>
                   <span className="text-xs text-[var(--text-muted)]">{post.readTime}</span>
                 </div>
-                <h3 className="font-bold text-white text-base mb-3 flex-1 group-hover:text-[#00D4AA] transition-colors leading-snug">
+                <h3 className="font-bold text-white text-base mb-3 flex-1 group-hover:text-[#00C9A7] transition-colors leading-snug">
                   {post.title}
                 </h3>
                 <p className="text-xs text-[var(--text-muted)] leading-relaxed mb-5 line-clamp-3">{post.excerpt}</p>
                 <div className="flex items-center justify-between">
                   <span className="text-xs text-[var(--text-muted)]">{post.publishedAt}</span>
-                  <svg className="w-4 h-4 text-[#00D4AA] group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <svg className="w-4 h-4 text-[#00C9A7] group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
                     <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3" />
                   </svg>
                 </div>

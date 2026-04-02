@@ -41,7 +41,7 @@ export default function HomePage() {
       <SectionWrapper className="py-24 px-4 sm:px-6 bg-[#0a1520]">
         <div className="max-w-7xl mx-auto">
           <div className="text-center mb-12">
-            <p className="text-[#00D4AA] text-sm font-semibold uppercase tracking-widest mb-3">
+            <p className="text-[#00C9A7] text-sm font-semibold uppercase tracking-widest mb-3">
               The Technology Wheel
             </p>
             <h2 className="text-3xl sm:text-4xl font-bold text-white mb-4">

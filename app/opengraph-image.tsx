@@ -38,7 +38,7 @@ export default function OGImage() {
               fontSize: 56,
               fontWeight: 800,
               lineHeight: 1.15,
-              background: 'linear-gradient(135deg, #FFFFFF 0%, #00D4AA 100%)',
+              background: 'linear-gradient(135deg, #FFFFFF 0%, #00C9A7 100%)',
               backgroundClip: 'text',
               color: 'transparent',
             }}
@@ -61,7 +61,7 @@ export default function OGImage() {
             display: 'flex',
             width: '100%',
             height: '4px',
-            background: 'linear-gradient(90deg, #00D4AA 0%, #00D4AA 40%, transparent 100%)',
+            background: 'linear-gradient(90deg, #00C9A7 0%, #00C9A7 40%, transparent 100%)',
             borderRadius: '2px',
           }}
         />

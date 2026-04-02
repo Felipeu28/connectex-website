@@ -16,7 +16,7 @@ export const metadata = genMeta({
 })
 
 const categories: { name: string; Icon: LucideIcon; color: string; href: string; count: string }[] = [
-  { name: 'Managed IT', Icon: Monitor, color: '#00D4AA', href: '/solutions/managed-it', count: '120+' },
+  { name: 'Managed IT', Icon: Monitor, color: '#00C9A7', href: '/solutions/managed-it', count: '120+' },
   { name: 'Cybersecurity', Icon: Shield, color: '#FF6B6B', href: '/solutions/cybersecurity', count: '90+' },
   { name: 'Cloud & SaaS', Icon: Cloud, color: '#60A5FA', href: '/solutions/cloud', count: '150+' },
   { name: 'Communications', Icon: Phone, color: '#A78BFA', href: '/solutions/communications', count: '80+' },
@@ -31,7 +31,7 @@ const benefits: { Icon: LucideIcon; title: string; description: string; color: s
     Icon: FileText,
     title: 'One MDA covers everything',
     description: 'Sign one Master Services Agreement and access every vendor in the catalog. No separate contracts for each provider.',
-    color: '#00D4AA',
+    color: '#00C9A7',
   },
   {
     Icon: Lock,
@@ -71,7 +71,7 @@ export default function MarketplacePage() {
       {/* Hero */}
       <section className="pt-32 pb-20 px-4 sm:px-6 grid-bg">
         <div className="max-w-4xl mx-auto text-center">
-          <p className="text-[#00D4AA] text-sm font-semibold uppercase tracking-widest mb-4">Technology Marketplace</p>
+          <p className="text-[#00C9A7] text-sm font-semibold uppercase tracking-widest mb-4">Technology Marketplace</p>
           <h1 className="text-4xl sm:text-5xl font-bold text-[var(--text)] leading-tight mb-5">
             600+ technology solutions.<br />One advisor. One agreement.
           </h1>
@@ -128,11 +128,11 @@ export default function MarketplacePage() {
       {/* AppDirect embed placeholder */}
       <SectionWrapper className="py-16 px-4 sm:px-6 bg-[#0a1520]">
         <div className="max-w-4xl mx-auto">
-          <div className="glass rounded-3xl p-12 border border-[#00D4AA]/20 text-center">
+          <div className="glass rounded-3xl p-12 border border-[#00C9A7]/20 text-center">
             <div
-              className="w-16 h-16 rounded-2xl bg-[#00D4AA]/15 border border-[#00D4AA]/30 flex items-center justify-center mx-auto mb-6"
+              className="w-16 h-16 rounded-2xl bg-[#00C9A7]/15 border border-[#00C9A7]/30 flex items-center justify-center mx-auto mb-6"
             >
-              <Rocket className="w-7 h-7 text-[#00D4AA]" strokeWidth={1.5} />
+              <Rocket className="w-7 h-7 text-[#00C9A7]" strokeWidth={1.5} />
             </div>
             <h2 className="text-2xl font-bold text-[var(--text)] mb-3">Full marketplace coming soon</h2>
             <p className="text-[var(--text-muted)] max-w-xl mx-auto mb-8">

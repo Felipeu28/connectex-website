@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import Image from 'next/image'
 import { Phone, Mail, MapPin, ArrowRight } from '@/components/ui/Icons'
 
 const solutions = [
@@ -24,23 +25,32 @@ export function Footer() {
         <div className="grid grid-cols-1 md:grid-cols-4 gap-10">
           {/* Brand */}
           <div className="md:col-span-1">
-            <Link href="/" className="flex items-center gap-2 mb-4">
-              <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[#00D4AA] to-[#1F4E78] flex items-center justify-center">
-                <span className="text-white font-bold text-sm">C</span>
+            <Link href="/" className="inline-flex items-center gap-3 mb-4">
+              <Image
+                src="/logos/logo-symbol.png"
+                alt=""
+                width={48}
+                height={48}
+                className="h-10 w-auto"
+              />
+              <div className="flex flex-col leading-none">
+                <span className="text-[17px] font-bold tracking-tight text-white">
+                  CONNECTEX
+                </span>
+                <span className="text-[10px] font-semibold tracking-[0.2em] text-[#00C9A7]">
+                  SOLUTIONS
+                </span>
               </div>
-              <span className="font-semibold text-[var(--text)] text-lg tracking-tight">
-                Connect<span className="text-[#00D4AA]">Ex</span>
-              </span>
             </Link>
             <p className="text-[var(--text-muted)] text-sm leading-relaxed mb-6">
               Austin&rsquo;s vendor-neutral technology advisor for small business. We shop 600+ providers so you don&rsquo;t have to.
             </p>
             <div className="space-y-2.5 text-sm text-[var(--text-muted)]">
-              <a href="tel:+15129621199" className="flex items-center gap-2.5 hover:text-[#00D4AA] transition-colors">
+              <a href="tel:+15129621199" className="flex items-center gap-2.5 hover:text-[#00C9A7] transition-colors">
                 <Phone className="w-4 h-4 shrink-0" strokeWidth={1.5} />
                 (512) 962-1199
               </a>
-              <a href="mailto:mark@connectex.net" className="flex items-center gap-2.5 hover:text-[#00D4AA] transition-colors">
+              <a href="mailto:mark@connectex.net" className="flex items-center gap-2.5 hover:text-[#00C9A7] transition-colors">
                 <Mail className="w-4 h-4 shrink-0" strokeWidth={1.5} />
                 mark@connectex.net
               </a>
@@ -57,7 +67,7 @@ export function Footer() {
             <ul className="space-y-2.5">
               {solutions.map((link) => (
                 <li key={link.href}>
-                  <Link href={link.href} className="text-sm text-[var(--text-muted)] hover:text-[#00D4AA] transition-colors">
+                  <Link href={link.href} className="text-sm text-[var(--text-muted)] hover:text-[#00C9A7] transition-colors">
                     {link.label}
                   </Link>
                 </li>
@@ -71,7 +81,7 @@ export function Footer() {
             <ul className="space-y-2.5">
               {company.map((link) => (
                 <li key={link.href}>
-                  <Link href={link.href} className="text-sm text-[var(--text-muted)] hover:text-[#00D4AA] transition-colors">
+                  <Link href={link.href} className="text-sm text-[var(--text-muted)] hover:text-[#00C9A7] transition-colors">
                     {link.label}
                   </Link>
                 </li>

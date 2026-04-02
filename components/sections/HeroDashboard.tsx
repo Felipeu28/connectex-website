@@ -81,7 +81,7 @@ export function HeroDashboard() {
   const techStack = [
     { Icon: Shield, label: 'Security', color: '#FF6B6B', status: 'Active' },
     { Icon: Cloud, label: 'Cloud', color: '#60A5FA', status: 'Active' },
-    { Icon: Monitor, label: 'IT Mgmt', color: '#00D4AA', status: 'Active' },
+    { Icon: Monitor, label: 'IT Mgmt', color: '#00C9A7', status: 'Active' },
     { Icon: Phone, label: 'UCaaS', color: '#A78BFA', status: 'Onboarding' },
     { Icon: Cpu, label: 'AI/ML', color: '#F59E0B', status: 'Review' },
     { Icon: Globe, label: 'Network', color: '#34D399', status: 'Active' },
@@ -90,14 +90,14 @@ export function HeroDashboard() {
   return (
     <div className="relative w-full max-w-lg mx-auto" aria-hidden="true">
       {/* Background glow */}
-      <div className="absolute -inset-8 bg-[#00D4AA]/[0.04] rounded-[3rem] blur-3xl pointer-events-none" />
+      <div className="absolute -inset-8 bg-[#00C9A7]/[0.04] rounded-[3rem] blur-3xl pointer-events-none" />
 
       {/* ─── Main dashboard card ─── */}
       <DashCard className="p-5 relative z-10" delay={0.4}>
         {/* Header */}
         <div className="flex items-center justify-between mb-4">
           <div className="flex items-center gap-2">
-            <div className="w-2 h-2 rounded-full bg-[#00D4AA] animate-pulse" />
+            <div className="w-2 h-2 rounded-full bg-[#00C9A7] animate-pulse" />
             <span className="text-xs font-semibold text-[var(--text)]">ConnectEx Dashboard</span>
           </div>
           <span className="text-[10px] text-[var(--text-muted)] px-2 py-0.5 rounded-full bg-white/5">Live</span>
@@ -106,7 +106,7 @@ export function HeroDashboard() {
         {/* Stats row */}
         <div className="grid grid-cols-3 gap-3 mb-5">
           {[
-            { label: 'Vendors', value: '47', change: '+3', color: '#00D4AA' },
+            { label: 'Vendors', value: '47', change: '+3', color: '#00C9A7' },
             { label: 'Savings', value: '$24K', change: '↑18%', color: '#60A5FA' },
             { label: 'Uptime', value: '99.8%', change: 'Stable', color: '#34D399' },
           ].map((stat) => (
@@ -122,10 +122,10 @@ export function HeroDashboard() {
         <div className="rounded-xl bg-white/[0.02] border border-white/[0.06] p-3 mb-4">
           <div className="flex items-center justify-between mb-2">
             <span className="text-[10px] text-[var(--text-muted)] font-medium">Vendor Performance</span>
-            <span className="text-[10px] text-[#00D4AA] font-medium">Last 30 days</span>
+            <span className="text-[10px] text-[#00C9A7] font-medium">Last 30 days</span>
           </div>
           <Sparkline
-            color="#00D4AA"
+            color="#00C9A7"
             d="M0 18 C8 18 12 12 20 14 C28 16 32 6 40 8 C48 10 52 4 60 3 C68 2 72 6 80 2"
           />
         </div>
@@ -143,7 +143,7 @@ export function HeroDashboard() {
               <Icon className="w-3.5 h-3.5 shrink-0" style={{ color }} strokeWidth={1.5} />
               <div className="min-w-0">
                 <p className="text-[10px] font-medium text-[var(--text)] truncate">{label}</p>
-                <p className="text-[8px]" style={{ color: status === 'Active' ? '#00D4AA' : status === 'Onboarding' ? '#F59E0B' : '#94A3B8' }}>
+                <p className="text-[8px]" style={{ color: status === 'Active' ? '#00C9A7' : status === 'Onboarding' ? '#F59E0B' : '#94A3B8' }}>
                   {status}
                 </p>
               </div>
@@ -173,8 +173,8 @@ export function HeroDashboard() {
         </div>
         <div className="space-y-1.5">
           <div className="flex items-baseline gap-1">
-            <span className="text-xl font-bold text-[#00D4AA]">$24K</span>
-            <span className="text-[10px] text-[#00D4AA]">/yr</span>
+            <span className="text-xl font-bold text-[#00C9A7]">$24K</span>
+            <span className="text-[10px] text-[#00C9A7]">/yr</span>
           </div>
           <Sparkline
             color="#60A5FA"

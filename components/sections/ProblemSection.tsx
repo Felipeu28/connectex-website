@@ -52,7 +52,7 @@ export function ProblemSection() {
         {problems.map((problem, i) => (
           <StaggerItem key={i}>
             <div
-              className="glass rounded-2xl p-7 border border-white/8 group hover:border-[#00D4AA]/20 transition-all duration-200"
+              className="glass rounded-2xl p-7 border border-white/8 group hover:border-[#00C9A7]/20 transition-all duration-200"
             >
               <motion.div
                 className="w-12 h-12 rounded-xl flex items-center justify-center mb-5"

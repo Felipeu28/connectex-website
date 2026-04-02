@@ -31,7 +31,7 @@ export default function SolutionsPage() {
       {/* Hero */}
       <section className="pt-32 pb-16 px-4 sm:px-6 grid-bg">
         <div className="max-w-4xl mx-auto text-center">
-          <p className="text-[#00D4AA] text-sm font-semibold uppercase tracking-widest mb-4">Solutions</p>
+          <p className="text-[#00C9A7] text-sm font-semibold uppercase tracking-widest mb-4">Solutions</p>
           <h1 className="text-4xl sm:text-5xl font-bold text-[var(--text)] mb-5">
             Every technology your business needs, sourced from the best
           </h1>

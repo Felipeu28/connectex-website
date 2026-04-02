@@ -19,9 +19,9 @@ interface ButtonProps extends React.ButtonHTMLAttributes<HTMLButtonElement> {
 
 const variants: Record<Variant, string> = {
   primary:
-    'bg-[#1F4E78] hover:bg-[#1a4366] text-white border border-[#1F4E78] hover:border-[#1a4366]',
+    'bg-[#8B2BE2] hover:bg-[#7624c4] text-white border border-[#8B2BE2] hover:border-[#7624c4]',
   secondary:
-    'bg-transparent hover:bg-[#00D4AA]/10 text-[#00D4AA] border border-[#00D4AA]/50 hover:border-[#00D4AA]',
+    'bg-transparent hover:bg-[#00C9A7]/10 text-[#00C9A7] border border-[#00C9A7]/50 hover:border-[#00C9A7]',
   ghost:
     'bg-transparent hover:bg-white/5 text-[var(--text-muted)] hover:text-white border border-transparent',
   cta: 'bg-[#FF6B6B] hover:bg-[#ff5252] text-white border border-[#FF6B6B] hover:border-[#ff5252] shadow-lg shadow-[#FF6B6B]/20 hover:shadow-[#FF6B6B]/40',
@@ -51,7 +51,7 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
     ref
   ) => {
     const base =
-      'inline-flex items-center justify-center font-medium rounded-xl transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00D4AA] focus-visible:ring-offset-2 focus-visible:ring-offset-[#0F1B2D] disabled:opacity-50 disabled:pointer-events-none select-none'
+      'inline-flex items-center justify-center font-medium rounded-xl transition-all duration-150 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#00C9A7] focus-visible:ring-offset-2 focus-visible:ring-offset-[#0F1B2D] disabled:opacity-50 disabled:pointer-events-none select-none'
 
     const classes = clsx(base, variants[variant], sizes[size], className)
 

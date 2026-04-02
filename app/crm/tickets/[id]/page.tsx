@@ -1,0 +1,201 @@
+'use client'
+
+import { useEffect, useState, use } from 'react'
+import { CRMShell } from '@/components/crm/CRMShell'
+import { createSupabaseBrowser } from '@/lib/supabase-browser'
+import { TICKET_STATUS_CONFIG } from '@/lib/crm-types'
+import type { Ticket } from '@/lib/crm-types'
+import { ArrowLeft, Send, ExternalLink } from 'lucide-react'
+import Link from 'next/link'
+import { clsx } from 'clsx'
+
+interface TicketMessage {
+  id: string
+  ticket_id: string
+  sender_type: 'client' | 'admin'
+  sender_name: string
+  message: string
+  created_at: string
+}
+
+export default function CRMTicketDetailPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = use(params)
+  const [ticket, setTicket] = useState<Ticket | null>(null)
+  const [messages, setMessages] = useState<TicketMessage[]>([])
+  const [loading, setLoading] = useState(true)
+  const [reply, setReply] = useState('')
+  const [sending, setSending] = useState(false)
+
+  useEffect(() => {
+    (async () => {
+      const supabase = createSupabaseBrowser()
+      const [ticketRes, msgsRes] = await Promise.all([
+        supabase.from('tickets').select('*').eq('id', id).single(),
+        supabase.from('ticket_messages').select('*').eq('ticket_id', id).order('created_at', { ascending: true }),
+      ])
+      setTicket(ticketRes.data)
+      setMessages(msgsRes.data ?? [])
+      setLoading(false)
+    })()
+  }, [id])
+
+  async function load() {
+    const supabase = createSupabaseBrowser()
+    const [ticketRes, msgsRes] = await Promise.all([
+      supabase.from('tickets').select('*').eq('id', id).single(),
+      supabase.from('ticket_messages').select('*').eq('ticket_id', id).order('created_at', { ascending: true }),
+    ])
+    setTicket(ticketRes.data)
+    setMessages(msgsRes.data ?? [])
+    setLoading(false)
+  }
+
+  async function sendReply() {
+    if (!reply.trim() || !ticket) return
+    setSending(true)
+    const supabase = createSupabaseBrowser()
+    await supabase.from('ticket_messages').insert({
+      ticket_id: ticket.id,
+      sender_type: 'admin',
+      sender_name: 'Mark',
+      message: reply.trim(),
+    })
+    setReply('')
+    setSending(false)
+    load()
+  }
+
+  async function updateStatus(newStatus: string) {
+    if (!ticket) return
+    const supabase = createSupabaseBrowser()
+    await supabase.from('tickets').update({ status: newStatus, updated_at: new Date().toISOString() }).eq('id', ticket.id)
+    load()
+  }
+
+  if (loading) {
+    return (
+      <CRMShell>
+        <div className="max-w-4xl mx-auto">
+          <div className="h-8 w-48 bg-white/5 animate-pulse rounded mb-6" />
+          <div className="glass rounded-xl p-6 space-y-4">
+            {[...Array(4)].map((_, i) => <div key={i} className="h-5 bg-white/5 animate-pulse rounded w-3/4" />)}
+          </div>
+        </div>
+      </CRMShell>
+    )
+  }
+
+  if (!ticket) {
+    return (
+      <CRMShell>
+        <div className="text-center py-20">
+          <p className="text-[var(--color-text-muted)]">Ticket not found.</p>
+          <Link href="/crm/tickets" className="text-[#00C9A7] text-sm mt-2 inline-block hover:underline">Back to Tickets</Link>
+        </div>
+      </CRMShell>
+    )
+  }
+
+  const status = TICKET_STATUS_CONFIG[ticket.status]
+
+  return (
+    <CRMShell>
+      <div className="max-w-4xl mx-auto space-y-5">
+        {/* Header */}
+        <div className="flex items-start gap-3">
+          <Link href="/crm/tickets" className="p-2 rounded-lg hover:bg-white/10 text-[var(--color-text-muted)] transition-colors mt-0.5">
+            <ArrowLeft className="w-5 h-5" />
+          </Link>
+          <div className="flex-1 min-w-0">
+            <h1 className="text-xl font-bold text-white">{ticket.subject}</h1>
+            <div className="flex items-center gap-3 mt-1 flex-wrap">
+              <span className="text-sm text-[var(--color-text-muted)]">{ticket.name} &middot; {ticket.email}</span>
+              {ticket.company && <span className="text-sm text-[var(--color-text-faint)]">{ticket.company}</span>}
+            </div>
+          </div>
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <select
+              value={ticket.status}
+              onChange={(e) => updateStatus(e.target.value)}
+              className="text-xs font-medium px-3 py-1.5 rounded-full border-0 focus:outline-none focus:ring-2 focus:ring-[#00C9A7] cursor-pointer"
+              style={{ backgroundColor: `${status?.color}20`, color: status?.color }}
+            >
+              {Object.entries(TICKET_STATUS_CONFIG).map(([key, config]) => (
+                <option key={key} value={key}>{config.label}</option>
+              ))}
+            </select>
+            <Link
+              href={`/ticketing/${ticket.token}`}
+              target="_blank"
+              className="p-2 rounded-lg hover:bg-white/10 text-[var(--color-text-muted)] hover:text-white transition-colors"
+              title="Open client view"
+            >
+              <ExternalLink className="w-4 h-4" />
+            </Link>
+          </div>
+        </div>
+
+        {/* Original description */}
+        <div className="glass rounded-xl p-5">
+          <p className="text-xs text-[var(--color-text-faint)] mb-2">
+            Submitted {new Date(ticket.created_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' })}
+          </p>
+          <p className="text-sm text-white whitespace-pre-wrap">{ticket.description}</p>
+        </div>
+
+        {/* Conversation */}
+        <div className="glass rounded-xl p-5">
+          <h2 className="text-sm font-semibold text-[var(--color-text-muted)] uppercase tracking-wider mb-4">Conversation</h2>
+
+          {messages.length === 0 ? (
+            <p className="text-[var(--color-text-muted)] text-sm py-4 text-center">No messages yet. Send a reply below.</p>
+          ) : (
+            <div className="space-y-3 mb-4">
+              {messages.map((m) => (
+                <div
+                  key={m.id}
+                  className={clsx(
+                    'p-3 rounded-lg max-w-[85%]',
+                    m.sender_type === 'admin'
+                      ? 'ml-auto bg-[#00C9A7]/10 border border-[#00C9A7]/20'
+                      : 'bg-white/[0.03] border border-white/5'
+                  )}
+                >
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className={clsx('text-xs font-medium', m.sender_type === 'admin' ? 'text-[#00C9A7]' : 'text-white')}>
+                      {m.sender_name}
+                    </span>
+                    <span className="text-xs text-[var(--color-text-faint)]">
+                      {new Date(m.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}
+                    </span>
+                  </div>
+                  <p className="text-sm text-white whitespace-pre-wrap">{m.message}</p>
+                </div>
+              ))}
+            </div>
+          )}
+
+          {/* Reply box */}
+          <div className="flex gap-2">
+            <textarea
+              value={reply}
+              onChange={(e) => setReply(e.target.value)}
+              onKeyDown={(e) => { if (e.key === 'Enter' && e.metaKey) sendReply() }}
+              placeholder="Type your reply... (Cmd+Enter to send)"
+              rows={2}
+              className="flex-1 px-3 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white placeholder:text-[var(--color-text-faint)] focus:outline-none focus:ring-2 focus:ring-[#00C9A7] text-sm resize-none"
+            />
+            <button
+              onClick={sendReply}
+              disabled={sending || !reply.trim()}
+              className="px-4 py-2.5 bg-[#00C9A7] hover:bg-[#00b394] text-[#0F1B2D] font-semibold rounded-xl transition-colors disabled:opacity-50 self-end"
+              aria-label="Send reply"
+            >
+              <Send className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+      </div>
+    </CRMShell>
+  )
+}

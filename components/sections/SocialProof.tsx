@@ -18,7 +18,7 @@ const testimonials = [
     title: 'Owner',
     company: '[Austin Business]',
     initials: 'AB',
-    color: '#00D4AA',
+    color: '#00C9A7',
   },
   {
     quote:
@@ -77,7 +77,7 @@ export function SocialProof() {
 
         {/* Testimonials */}
         <div className="text-center mb-12">
-          <p className="text-[#00D4AA] text-sm font-semibold uppercase tracking-widest mb-3">Client Results</p>
+          <p className="text-[#00C9A7] text-sm font-semibold uppercase tracking-widest mb-3">Client Results</p>
           <h2 className="text-3xl sm:text-4xl font-bold text-[var(--text)]">
             What Austin businesses say
           </h2>
