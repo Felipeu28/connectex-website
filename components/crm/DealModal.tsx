@@ -91,8 +91,8 @@ export function DealModal({ deal, contacts, defaultStage, defaultContactId, open
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/60" onClick={onClose} />
-      <div className="relative w-full max-w-lg max-h-[90vh] overflow-y-auto glass rounded-2xl p-6 bg-[#0F1B2D] border border-white/10">
+      <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-2xl p-6 bg-[#0F1B2D]/95 backdrop-blur-xl border border-white/10 shadow-2xl shadow-black/40">
         <div className="flex items-center justify-between mb-5">
           <h2 className="text-lg font-semibold text-white">
             {deal ? 'Edit Deal' : 'New Deal'}

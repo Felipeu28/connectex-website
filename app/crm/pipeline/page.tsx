@@ -51,6 +51,11 @@ export default function PipelinePage() {
     setDeals((prev) => prev.map((d) => d.id === dealId ? { ...d, stage: newStage } : d))
     await supabase.from('crm_deals').update({ stage: newStage, updated_at: new Date().toISOString() }).eq('id', dealId)
 
+    // Sync stage to linked contact
+    if (deal?.contact_id) {
+      await supabase.from('crm_contacts').update({ stage: newStage, updated_at: new Date().toISOString() }).eq('id', deal.contact_id)
+    }
+
     const isClosed = newStage === 'closed_won' || newStage === 'closed_lost'
     await logActivity({
       type: isClosed ? 'deal_closed' : 'deal_moved',

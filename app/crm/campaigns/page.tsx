@@ -299,8 +299,8 @@ export default function CampaignsPage() {
       {/* Campaign Editor Modal */}
       {editorOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/60" onClick={() => setEditorOpen(false)} />
-          <div className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto glass rounded-2xl p-6 bg-[#0F1B2D] border border-white/10">
+          <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={() => setEditorOpen(false)} />
+          <div className="relative w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-2xl p-6 bg-[#0F1B2D]/95 backdrop-blur-xl border border-white/10 shadow-2xl shadow-black/40">
             <div className="flex items-center justify-between mb-5">
               <h2 className="text-lg font-semibold text-white">
                 {editCampaign ? 'Edit Campaign' : 'New Campaign'}
@@ -393,7 +393,7 @@ export default function CampaignsPage() {
       {/* Preview Modal */}
       {previewOpen && previewCampaign && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/60" onClick={() => setPreviewOpen(false)} />
+          <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={() => setPreviewOpen(false)} />
           <div className="relative w-full max-w-lg max-h-[80vh] overflow-y-auto rounded-2xl p-6 bg-white text-gray-900">
             <button onClick={() => setPreviewOpen(false)} className="absolute top-4 right-4 p-1.5 rounded-lg hover:bg-gray-100 text-gray-400" aria-label="Close preview">
               <X className="w-5 h-5" />
@@ -409,8 +409,8 @@ export default function CampaignsPage() {
       {/* Send Campaign Modal */}
       {sendModalOpen && sendCampaign && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <div className="absolute inset-0 bg-black/60" onClick={!sending ? closeSendModal : undefined} />
-          <div className="relative w-full max-w-md glass rounded-2xl p-6 bg-[#0F1B2D] border border-white/10">
+          <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={!sending ? closeSendModal : undefined} />
+          <div className="relative w-full max-w-md rounded-2xl p-6 bg-[#0F1B2D]/95 backdrop-blur-xl border border-white/10 shadow-2xl shadow-black/40">
             <div className="flex items-center justify-between mb-5">
               <h2 className="text-lg font-semibold text-white flex items-center gap-2">
                 <Send className="w-5 h-5 text-[#00C9A7]" />

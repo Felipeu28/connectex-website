@@ -81,6 +81,7 @@ export type ActivityType =
   | 'email'
   | 'call'
   | 'meeting'
+  | 'document'
   | 'deal_created'
   | 'deal_moved'
   | 'deal_closed'

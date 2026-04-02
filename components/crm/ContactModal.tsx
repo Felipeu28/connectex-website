@@ -81,12 +81,29 @@ export function ContactModal({ contact, open, onClose, onSaved }: ContactModalPr
     }
 
     if (contact) {
+      const stageChanged = data.stage !== contact.stage
       await supabase.from('crm_contacts').update(payload).eq('id', contact.id)
-      await logActivity({
-        type: 'contact_updated',
-        description: `Updated contact: ${data.name}`,
-        contact_id: contact.id,
-      })
+
+      // Sync stage change to all linked deals
+      if (stageChanged) {
+        await supabase.from('crm_deals').update({
+          stage: data.stage,
+          updated_at: new Date().toISOString(),
+        }).eq('contact_id', contact.id)
+
+        await logActivity({
+          type: 'stage_change',
+          description: `Moved ${data.name} from ${contact.stage} to ${data.stage} (synced to deals)`,
+          contact_id: contact.id,
+          metadata: { from: contact.stage, to: data.stage },
+        })
+      } else {
+        await logActivity({
+          type: 'contact_updated',
+          description: `Updated contact: ${data.name}`,
+          contact_id: contact.id,
+        })
+      }
     } else {
       const { data: inserted } = await supabase.from('crm_contacts').insert(payload).select('id').single()
       await logActivity({
@@ -105,8 +122,8 @@ export function ContactModal({ contact, open, onClose, onSaved }: ContactModalPr
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-      <div className="absolute inset-0 bg-black/60" onClick={onClose} />
-      <div className="relative w-full max-w-lg max-h-[90vh] overflow-y-auto glass rounded-2xl p-6 bg-[#0F1B2D] border border-white/10">
+      <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={onClose} />
+      <div className="relative w-full max-w-lg max-h-[90vh] overflow-y-auto rounded-2xl p-6 bg-[#0F1B2D]/95 backdrop-blur-xl border border-white/10 shadow-2xl shadow-black/40">
         <div className="flex items-center justify-between mb-5">
           <h2 className="text-lg font-semibold text-white">
             {contact ? 'Edit Contact' : 'New Contact'}
