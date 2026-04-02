@@ -1,6 +1,10 @@
 import { google, calendar_v3 } from 'googleapis'
 
-const SCOPES = ['https://www.googleapis.com/auth/calendar']
+const SCOPES = [
+  'https://www.googleapis.com/auth/calendar',
+  'https://www.googleapis.com/auth/gmail.send',
+  'https://www.googleapis.com/auth/gmail.readonly',
+]
 
 function getOAuth2Client() {
   return new google.auth.OAuth2(

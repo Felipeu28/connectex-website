@@ -15,6 +15,7 @@ import {
   LogOut,
   Menu,
   ChevronRight,
+  Workflow,
 } from 'lucide-react'
 import { createSupabaseBrowser } from '@/lib/supabase-browser'
 
@@ -24,6 +25,7 @@ const navItems = [
   { href: '/crm/pipeline', label: 'Pipeline', icon: Kanban },
   { href: '/crm/tickets', label: 'Tickets', icon: Ticket },
   { href: '/crm/campaigns', label: 'Campaigns', icon: Mail },
+  { href: '/crm/sequences', label: 'Sequences', icon: Workflow },
   { href: '/crm/calendar', label: 'Calendar', icon: Calendar },
 ]
 
@@ -136,7 +138,7 @@ export function CRMShell({ children }: { children: React.ReactNode }) {
 
           {/* Breadcrumb */}
           <div className="text-sm text-[var(--color-text-muted)]">
-            {navItems.find((item) => pathname.startsWith(item.href))?.label ?? 'CRM'}
+            {navItems.find((item) => pathname === item.href || pathname.startsWith(item.href + '/'))?.label ?? 'CRM'}
           </div>
         </header>
 

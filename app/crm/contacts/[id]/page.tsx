@@ -6,10 +6,12 @@ import { ContactModal } from '@/components/crm/ContactModal'
 import { DealModal } from '@/components/crm/DealModal'
 import { createSupabaseBrowser } from '@/lib/supabase-browser'
 import { PIPELINE_STAGES, type Contact, type Activity, type Deal, type CalendarEvent, type ActivityType } from '@/lib/crm-types'
+
+interface Sequence { id: string; name: string; status: string }
 import { logActivity } from '@/lib/crm-activity'
 import {
   ArrowLeft, Pencil, Mail, Phone, Building2, Briefcase, Clock, Plus, DollarSign,
-  Calendar, MessageSquare, PhoneCall, Video, FileText, StickyNote, Send, X,
+  Calendar, PhoneCall, Video, FileText, StickyNote, Send, X, Workflow, Sparkles, Loader2,
 } from 'lucide-react'
 import Link from 'next/link'
 import { clsx } from 'clsx'
@@ -50,13 +52,64 @@ export default function ContactDetailPage({ params }: { params: Promise<{ id: st
   const [editOpen, setEditOpen] = useState(false)
   const [dealModalOpen, setDealModalOpen] = useState(false)
 
+  // Sequence enrollment
+  const [sequences, setSequences] = useState<Sequence[]>([])
+  const [enrollModalOpen, setEnrollModalOpen] = useState(false)
+  const [selectedSeqId, setSelectedSeqId] = useState('')
+  const [enrolling, setEnrolling] = useState(false)
+
   // Quick action state
   const [activeAction, setActiveAction] = useState<QuickAction>(null)
   const [actionText, setActionText] = useState('')
   const [actionSubject, setActionSubject] = useState('')
   const [submittingAction, setSubmittingAction] = useState(false)
+  const [generatingEmail, setGeneratingEmail] = useState(false)
 
-  useEffect(() => { load() }, [id]) // eslint-disable-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    load()
+    loadSequences()
+  }, [id]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  async function loadSequences() {
+    const supabase = createSupabaseBrowser()
+    const { data } = await supabase.from('crm_sequences').select('id, name, status').eq('status', 'active').order('name')
+    setSequences(data ?? [])
+  }
+
+  async function enrollInSequence() {
+    if (!selectedSeqId) return
+    setEnrolling(true)
+    const supabase = createSupabaseBrowser()
+    // Check not already enrolled
+    const { data: existing } = await supabase
+      .from('crm_sequence_enrollments')
+      .select('id, status')
+      .eq('sequence_id', selectedSeqId)
+      .eq('contact_id', id)
+      .single()
+
+    if (existing && existing.status === 'active') {
+      setEnrolling(false)
+      setEnrollModalOpen(false)
+      return
+    }
+
+    const now = new Date().toISOString()
+    if (existing) {
+      // Re-enroll (reset)
+      await supabase.from('crm_sequence_enrollments').update({ status: 'active', current_step: 1, next_send_at: now }).eq('id', existing.id)
+    } else {
+      await supabase.from('crm_sequence_enrollments').insert({ sequence_id: selectedSeqId, contact_id: id, next_send_at: now })
+    }
+
+    const seq = sequences.find(s => s.id === selectedSeqId)
+    await logActivity({ type: 'email', description: `Enrolled in sequence: "${seq?.name}"`, contact_id: id })
+
+    setEnrolling(false)
+    setEnrollModalOpen(false)
+    setSelectedSeqId('')
+    load()
+  }
 
   async function load() {
     const supabase = createSupabaseBrowser()
@@ -93,6 +146,31 @@ export default function ContactDetailPage({ params }: { params: Promise<{ id: st
     setActiveAction(null)
     setSubmittingAction(false)
     load()
+  }
+
+  async function generateEmailWithContext() {
+    if (!contact) return
+    setGeneratingEmail(true)
+    try {
+      const res = await fetch('/api/crm/ai-generate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          prompt: actionSubject || `Follow up email to ${contact.name}`,
+          contactContext: {
+            name: contact.name,
+            company: contact.company,
+            stage: contact.stage,
+            notes: contact.notes,
+            recentActivity: activity.slice(0, 10),
+          },
+        }),
+      })
+      const data = await res.json()
+      if (data.subject && !actionSubject) setActionSubject(data.subject)
+      if (data.body) setActionText(data.body)
+    } catch { /* fail silently */ }
+    setGeneratingEmail(false)
   }
 
   if (loading) {
@@ -202,19 +280,41 @@ export default function ContactDetailPage({ params }: { params: Promise<{ id: st
               <Plus className="w-3.5 h-3.5" />
               Deal
             </button>
+            {sequences.length > 0 && (
+              <button
+                onClick={() => setEnrollModalOpen(true)}
+                className="inline-flex items-center gap-1.5 px-3.5 py-2 text-sm font-medium bg-[#A78BFA]/10 text-[#A78BFA] hover:bg-[#A78BFA]/20 rounded-xl transition-colors"
+              >
+                <Workflow className="w-3.5 h-3.5" />
+                Enroll
+              </button>
+            )}
           </div>
 
           {/* Expanded action input */}
           {activeAction && (
             <div className="mt-4 space-y-3">
               {needsSubject && (
-                <input
-                  type="text"
-                  value={actionSubject}
-                  onChange={(e) => setActionSubject(e.target.value)}
-                  placeholder={activeAction === 'email' ? 'Email subject...' : activeAction === 'meeting' ? 'Meeting title...' : 'Document name...'}
-                  className="w-full px-3 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white placeholder:text-[var(--color-text-faint)] focus:outline-none focus:ring-2 focus:ring-[#00C9A7] text-sm"
-                />
+                <div className="flex gap-2">
+                  <input
+                    type="text"
+                    value={actionSubject}
+                    onChange={(e) => setActionSubject(e.target.value)}
+                    placeholder={activeAction === 'email' ? 'Email subject or describe what to write...' : activeAction === 'meeting' ? 'Meeting title...' : 'Document name...'}
+                    className="flex-1 px-3 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white placeholder:text-[var(--color-text-faint)] focus:outline-none focus:ring-2 focus:ring-[#00C9A7] text-sm"
+                  />
+                  {activeAction === 'email' && (
+                    <button
+                      onClick={generateEmailWithContext}
+                      disabled={generatingEmail}
+                      className="inline-flex items-center gap-1.5 px-3 py-2 text-sm font-medium bg-[#A78BFA]/10 text-[#A78BFA] hover:bg-[#A78BFA]/20 rounded-xl transition-colors disabled:opacity-50 whitespace-nowrap"
+                      title="Generate with AI using contact context"
+                    >
+                      {generatingEmail ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Sparkles className="w-3.5 h-3.5" />}
+                      AI Draft
+                    </button>
+                  )}
+                </div>
               )}
               <div className="flex gap-2">
                 <textarea
@@ -437,6 +537,47 @@ export default function ContactDetailPage({ params }: { params: Promise<{ id: st
         onClose={() => setDealModalOpen(false)}
         onSaved={load}
       />
+
+      {/* Sequence enrollment modal */}
+      {enrollModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={() => setEnrollModalOpen(false)} />
+          <div className="relative w-full max-w-sm rounded-2xl p-6 bg-[#0F1B2D]/95 backdrop-blur-xl border border-white/10 shadow-2xl shadow-black/40">
+            <div className="flex items-center justify-between mb-5">
+              <h2 className="text-base font-semibold text-white flex items-center gap-2">
+                <Workflow className="w-4 h-4 text-[#A78BFA]" />
+                Enroll in Sequence
+              </h2>
+              <button onClick={() => setEnrollModalOpen(false)} className="p-1.5 rounded-lg hover:bg-white/10 text-[var(--color-text-muted)]" aria-label="Close">
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+            <p className="text-sm text-[var(--color-text-muted)] mb-4">
+              Enroll <span className="text-white font-medium">{contact.name}</span> into a drip sequence. Emails will be sent from your connected Gmail.
+            </p>
+            <select
+              value={selectedSeqId}
+              onChange={(e) => setSelectedSeqId(e.target.value)}
+              className="w-full px-3 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white focus:outline-none focus:ring-2 focus:ring-[#A78BFA] text-sm mb-4"
+            >
+              <option value="">Select a sequence...</option>
+              {sequences.map(s => <option key={s.id} value={s.id}>{s.name}</option>)}
+            </select>
+            <div className="flex gap-3">
+              <button onClick={() => setEnrollModalOpen(false)} className="flex-1 px-4 py-2.5 text-sm font-medium text-[var(--color-text-muted)] hover:text-white rounded-xl hover:bg-white/5 transition-colors">
+                Cancel
+              </button>
+              <button
+                onClick={enrollInSequence}
+                disabled={enrolling || !selectedSeqId}
+                className="flex-1 px-4 py-2.5 text-sm font-semibold bg-[#A78BFA] hover:bg-[#9575d2] text-white rounded-xl transition-colors disabled:opacity-50"
+              >
+                {enrolling ? 'Enrolling...' : 'Enroll Now'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </CRMShell>
   )
 }
