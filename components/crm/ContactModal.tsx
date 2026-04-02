@@ -104,13 +104,55 @@ export function ContactModal({ contact, open, onClose, onSaved }: ContactModalPr
           contact_id: contact.id,
         })
       }
+
+      // If deal_value is set but no deal exists yet, auto-create one
+      if (data.deal_value > 0) {
+        const { count } = await supabase
+          .from('crm_deals')
+          .select('id', { count: 'exact', head: true })
+          .eq('contact_id', contact.id)
+
+        if (!count || count === 0) {
+          const { data: newDeal } = await supabase.from('crm_deals').insert({
+            contact_id: contact.id,
+            title: data.company ? `${data.company} — ${data.name}` : data.name,
+            value: data.deal_value,
+            stage: data.stage,
+          }).select('id').single()
+
+          await logActivity({
+            type: 'deal_created',
+            description: `Deal auto-created for ${data.name} ($${data.deal_value.toLocaleString()})`,
+            contact_id: contact.id,
+            deal_id: newDeal?.id,
+          })
+        }
+      }
     } else {
       const { data: inserted } = await supabase.from('crm_contacts').insert(payload).select('id').single()
+
       await logActivity({
         type: 'contact_created',
         description: `Created new contact: ${data.name}${data.company ? ` (${data.company})` : ''}`,
         contact_id: inserted?.id ?? undefined,
       })
+
+      // Auto-create deal if deal_value is set
+      if (data.deal_value > 0 && inserted?.id) {
+        const { data: newDeal } = await supabase.from('crm_deals').insert({
+          contact_id: inserted.id,
+          title: data.company ? `${data.company} — ${data.name}` : data.name,
+          value: data.deal_value,
+          stage: data.stage,
+        }).select('id').single()
+
+        await logActivity({
+          type: 'deal_created',
+          description: `Deal auto-created for ${data.name} ($${data.deal_value.toLocaleString()})`,
+          contact_id: inserted.id,
+          deal_id: newDeal?.id,
+        })
+      }
     }
 
     setSaving(false)
