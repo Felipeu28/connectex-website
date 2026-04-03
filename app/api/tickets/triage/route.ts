@@ -1,49 +1,135 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { createClient } from '@supabase/supabase-js'
+import { createClient as createAdminClient } from '@supabase/supabase-js'
+import { readFileSync } from 'fs'
+import { join } from 'path'
 
 function getSupabaseAdmin() {
-  return createClient(
+  return createAdminClient(
     process.env.NEXT_PUBLIC_SUPABASE_URL!,
     process.env.SUPABASE_SERVICE_ROLE_KEY ?? process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
   )
 }
 
-const SYSTEM_PROMPT = `You are an expert IT support assistant for ConnectEx Solutions, a vendor-neutral technology advisor serving SMBs in Austin, TX.
+// ─── Category detection ──────────────────────────────────────────────────────
 
-Your job is to triage IT support tickets. For each ticket, you must:
-1. Determine if you can resolve it with clear, actionable troubleshooting steps (no specialized access or on-site visit needed)
-2. If yes: write a helpful, friendly response with step-by-step instructions
-3. If no: escalate to Mark (the human advisor) with a brief reason
+type TicketCategory = 'verizon' | 'microsoft365' | 'ucaas' | 'general'
 
-You CAN handle:
-- Password resets / account lockouts (provide self-service steps)
-- Email setup issues (Outlook, Gmail, mobile)
-- VPN connection problems
-- Wi-Fi and network connectivity troubleshooting
-- Printer setup and driver issues
-- Common software errors and crashes
-- Slow computer performance tips
-- Basic cybersecurity questions (phishing, MFA setup)
-- Microsoft 365 / Google Workspace common issues
-- Browser issues, extensions, cache clearing
+const CATEGORY_KEYWORDS: Record<TicketCategory, string[]> = {
+  verizon: [
+    'verizon', 'jetpack', 'mifi', 'hotspot', 'cellular', 'lte', '5g', '4g',
+    'sim', 'data plan', 'mobile', 'phone plan', 'smartphone', 'iphone', 'samsung',
+    'galaxy', 'pixel', 'apn', 'signal', 'network bars', 'mobile data', 'roaming',
+    'business internet', 'fios', 'verizon router', 'one talk', 'mdm', 'bmm',
+    'device management', 'knox', 'corporate phone', 'company phone',
+  ],
+  microsoft365: [
+    'microsoft', 'office 365', 'microsoft 365', 'outlook', 'teams', 'onedrive',
+    'sharepoint', 'excel', 'word', 'powerpoint', 'onenote', 'exchange', 'email',
+    'calendar sync', 'mfa', 'multi-factor', 'authenticator', 'azure', 'entra',
+    'office app', 'licensing', 'admin center', 'm365', 'o365',
+  ],
+  ucaas: [
+    'voip', 'phone system', 'ringcentral', 'dial tone', 'desk phone', 'softphone',
+    'sip', 'pbx', 'extension', 'voicemail', 'call forwarding', 'auto attendant',
+    'hunt group', 'teams phone', 'calling plan', 'business phone', 'polycom',
+    'yealink', 'one talk', 'ucaas', 'cloud phone', 'virtual phone', 'ivr',
+    'no dial tone', 'can\'t make calls', 'calls dropping',
+  ],
+  general: [],
+}
 
-You CANNOT handle (escalate to Mark):
-- Hardware failures requiring physical repair
-- Server infrastructure issues
-- Custom software / proprietary line-of-business applications
-- Network infrastructure configuration
-- Data recovery from failed drives
-- Security incidents / active breaches
-- Billing and account changes with vendors
-- Anything requiring vendor portal access
+function detectCategory(subject: string, description: string): TicketCategory[] {
+  const text = `${subject} ${description}`.toLowerCase()
+  const matched: TicketCategory[] = []
 
-Response format — return ONLY valid JSON:
-{
-  "can_handle": true/false,
-  "auto_response": "...",  // the message to send to the client (friendly, professional, under 400 words)
-  "priority_override": "low"|"medium"|"high"|"urgent"|null,  // null = keep original
-  "routing_reason": "..."  // brief internal note for Mark (1 sentence)
-}`
+  for (const [category, keywords] of Object.entries(CATEGORY_KEYWORDS) as [TicketCategory, string[]][]) {
+    if (category === 'general') continue
+    if (keywords.some((kw) => text.includes(kw))) {
+      matched.push(category)
+    }
+  }
+
+  return matched.length > 0 ? matched : ['general']
+}
+
+// ─── Knowledge base loading ──────────────────────────────────────────────────
+
+function loadKnowledge(categories: TicketCategory[]): string {
+  const knowledgeDir = join(process.cwd(), 'lib', 'knowledge')
+  const files: Record<TicketCategory, string> = {
+    verizon: 'verizon-devices.md',
+    microsoft365: 'microsoft365.md',
+    ucaas: 'ucaas-voip.md',
+    general: '',
+  }
+
+  const sections: string[] = []
+
+  for (const category of categories) {
+    const filename = files[category]
+    if (!filename) continue
+    try {
+      const content = readFileSync(join(knowledgeDir, filename), 'utf-8')
+      sections.push(content)
+    } catch {
+      // file not found — skip silently
+    }
+  }
+
+  return sections.join('\n\n---\n\n')
+}
+
+// ─── System prompt ───────────────────────────────────────────────────────────
+
+function buildSystemPrompt(knowledgeContext: string): string {
+  const basePrompt = `You are an expert IT support assistant for ConnectEx Solutions, a vendor-neutral technology advisor for SMBs in Austin, TX. You represent Mark, a 20+ year technology veteran.
+
+Your job: triage IT support tickets using the knowledge base provided. Be specific, use exact steps, and reference real product names and settings.
+
+## Confidence Scoring
+Rate your confidence 0–100:
+- 90–100: You have exact steps in the knowledge base. AI handles it.
+- 70–89: You can help with general guidance but steps may vary by exact model/version. AI handles it, flags uncertainty.
+- 50–69: Partially covered. Provide what you can, route to Mark for the rest.
+- 0–49: Outside knowledge base or requires account/portal access. Route to Mark.
+
+## Automation Rules
+**You CAN fully resolve:**
+- Device setup, APN configuration, network settings
+- App login issues, password resets (with steps)
+- Email sync problems, calendar issues
+- Hotspot/MiFi connectivity
+- VoIP call quality, desk phone registration
+- Microsoft 365 common errors
+- Wi-Fi and general connectivity troubleshooting
+
+**Always route to Mark:**
+- Adding/removing lines or upgrading devices (sales action)
+- Contract, billing disputes, or account changes
+- MDM policy configuration (not just enrollment)
+- Number porting
+- Security incidents or suspected breaches
+- Multi-site infrastructure setup
+- Anything requiring Verizon Business Center or vendor portal admin access
+
+## Response Style
+- Be direct and friendly. "Here's how to fix this:" not "I would suggest..."
+- Use numbered steps, specific settings paths (e.g., Settings → Cellular → APN)
+- Include model-specific details when relevant
+- If routing to Mark, explain WHY briefly and what Mark will do
+- Maximum 400 words in auto_response`
+
+  if (knowledgeContext) {
+    return `${basePrompt}
+
+## Knowledge Base
+${knowledgeContext}`
+  }
+
+  return basePrompt
+}
+
+// ─── Route handler ───────────────────────────────────────────────────────────
 
 export async function POST(req: NextRequest) {
   const apiKey = process.env.ANTHROPIC_API_KEY
@@ -59,7 +145,6 @@ export async function POST(req: NextRequest) {
 
     const supabase = getSupabaseAdmin()
 
-    // Fetch ticket
     const { data: ticket, error } = await supabase
       .from('tickets')
       .select('*')
@@ -70,15 +155,30 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Ticket not found' }, { status: 404 })
     }
 
-    // Skip if already triaged
     if (ticket.ai_handled || ticket.routed_to_mark) {
       return NextResponse.json({ skipped: true })
     }
 
+    // Detect categories and load relevant knowledge
+    const categories = detectCategory(ticket.subject, ticket.description)
+    const knowledgeContext = loadKnowledge(categories)
+    const systemPrompt = buildSystemPrompt(knowledgeContext)
+
     const userPrompt = `Ticket subject: ${ticket.subject}
 Issue description: ${ticket.description}
 Priority: ${ticket.priority}
-${ticket.company ? `Company: ${ticket.company}` : ''}`
+${ticket.company ? `Company: ${ticket.company}` : ''}
+Detected categories: ${categories.join(', ')}
+
+Analyze this ticket and respond with ONLY valid JSON in this exact format:
+{
+  "can_handle": true or false,
+  "confidence": 0-100,
+  "category": "verizon" | "microsoft365" | "ucaas" | "general",
+  "auto_response": "the message to send to the client (friendly, professional, specific steps)",
+  "priority_override": "low" | "medium" | "high" | "urgent" | null,
+  "routing_reason": "one sentence for Mark explaining why this needs him (only if can_handle is false)"
+}`
 
     const res = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
@@ -89,13 +189,14 @@ ${ticket.company ? `Company: ${ticket.company}` : ''}`
       },
       body: JSON.stringify({
         model: 'claude-haiku-4-5-20251001',
-        max_tokens: 1024,
-        system: SYSTEM_PROMPT,
+        max_tokens: 1200,
+        system: systemPrompt,
         messages: [{ role: 'user', content: userPrompt }],
       }),
     })
 
     if (!res.ok) {
+      console.error('Anthropic API error:', await res.text())
       return NextResponse.json({ error: 'AI triage failed' }, { status: 502 })
     }
 
@@ -104,23 +205,28 @@ ${ticket.company ? `Company: ${ticket.company}` : ''}`
     const jsonMatch = text.match(/\{[\s\S]*\}/)
 
     if (!jsonMatch) {
+      console.error('Failed to parse AI response:', text)
       return NextResponse.json({ error: 'Failed to parse AI response' }, { status: 500 })
     }
 
     const triage = JSON.parse(jsonMatch[0]) as {
       can_handle: boolean
+      confidence: number
+      category: string
       auto_response: string
       priority_override: string | null
       routing_reason: string
     }
 
+    // If confidence < 60, always route to Mark even if AI thinks it can handle it
+    const shouldHandle = triage.can_handle && triage.confidence >= 60
+
     const now = new Date().toISOString()
 
-    // Update ticket with triage results
     const ticketUpdate: Record<string, unknown> = {
       ai_response: triage.auto_response,
-      ai_handled: triage.can_handle,
-      routed_to_mark: !triage.can_handle,
+      ai_handled: shouldHandle,
+      routed_to_mark: !shouldHandle,
       updated_at: now,
     }
     if (triage.priority_override) {
@@ -129,8 +235,7 @@ ${ticket.company ? `Company: ${ticket.company}` : ''}`
 
     await supabase.from('tickets').update(ticketUpdate).eq('id', ticket_id)
 
-    // If AI can handle it, post the response as a ticket message
-    if (triage.can_handle) {
+    if (shouldHandle) {
       await supabase.from('ticket_messages').insert({
         ticket_id,
         sender_type: 'admin',
@@ -138,30 +243,36 @@ ${ticket.company ? `Company: ${ticket.company}` : ''}`
         message: triage.auto_response,
       })
 
-      // Mark as in_progress since we've responded
       await supabase
         .from('tickets')
         .update({ status: 'in_progress', updated_at: now })
         .eq('id', ticket_id)
-        .eq('status', 'open') // only if still open
+        .eq('status', 'open')
     }
 
-    // Log to CRM activity if linked to a contact
     if (ticket.contact_id) {
       await supabase.from('crm_activity').insert({
         type: 'ticket',
         contact_id: ticket.contact_id,
-        description: triage.can_handle
-          ? `AI auto-responded to ticket: "${ticket.subject}"`
-          : `Ticket routed to Mark: "${ticket.subject}" — ${triage.routing_reason}`,
-        metadata: { ticket_id, ai_handled: triage.can_handle, routing_reason: triage.routing_reason },
+        description: shouldHandle
+          ? `AI resolved ticket [${triage.category}]: "${ticket.subject}" (confidence: ${triage.confidence}%)`
+          : `Ticket routed to Mark [${triage.category}]: "${ticket.subject}" — ${triage.routing_reason}`,
+        metadata: {
+          ticket_id,
+          category: triage.category,
+          confidence: triage.confidence,
+          ai_handled: shouldHandle,
+          routing_reason: triage.routing_reason ?? null,
+        },
       })
     }
 
     return NextResponse.json({
-      can_handle: triage.can_handle,
+      can_handle: shouldHandle,
+      confidence: triage.confidence,
+      category: triage.category,
       priority_override: triage.priority_override,
-      routing_reason: triage.routing_reason,
+      routing_reason: triage.routing_reason ?? null,
     })
   } catch (err) {
     console.error('Triage error:', err)
