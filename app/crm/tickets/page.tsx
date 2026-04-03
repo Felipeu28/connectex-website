@@ -31,7 +31,7 @@ export default function CRMTicketsPage() {
     (async () => {
       setLoading(true)
       const supabase = createSupabaseBrowser()
-      let query = supabase.from('tickets').select('*, contact:crm_contacts(id, name)', { count: 'exact' }).order('created_at', { ascending: false })
+      let query = supabase.from('tickets').select('*', { count: 'exact' }).order('created_at', { ascending: false })
 
       if (statusFilter !== 'all') {
         query = query.eq('status', statusFilter)
@@ -51,7 +51,7 @@ export default function CRMTicketsPage() {
 
   async function load() {
     const supabase = createSupabaseBrowser()
-    let query = supabase.from('tickets').select('*, contact:crm_contacts(id, name)', { count: 'exact' }).order('created_at', { ascending: false })
+    let query = supabase.from('tickets').select('*', { count: 'exact' }).order('created_at', { ascending: false })
 
     if (statusFilter !== 'all') {
       query = query.eq('status', statusFilter)

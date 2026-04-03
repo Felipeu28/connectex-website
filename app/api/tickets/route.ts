@@ -32,13 +32,6 @@ export async function POST(req: NextRequest) {
 
     const supabase = getSupabaseAdmin()
 
-    // Auto-detect linked CRM contact by email
-    const { data: contact } = await supabase
-      .from('crm_contacts')
-      .select('id')
-      .eq('email', email.toLowerCase().trim())
-      .maybeSingle()
-
     const { data: ticket, error } = await supabase
       .from('tickets')
       .insert({
@@ -49,7 +42,6 @@ export async function POST(req: NextRequest) {
         description,
         priority: safePriority,
         image_url: image_url || null,
-        contact_id: contact?.id ?? null,
       })
       .select('id, token')
       .single()
@@ -59,14 +51,29 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Failed to create ticket' }, { status: 500 })
     }
 
-    // Log to CRM activity if contact was detected
-    if (contact?.id) {
-      await supabase.from('crm_activity').insert({
-        type: 'ticket',
-        contact_id: contact.id,
-        description: `Support ticket submitted: "${subject}"`,
-        metadata: { ticket_id: ticket.id },
-      })
+    // Best-effort: auto-detect linked CRM contact by email and update ticket
+    try {
+      const { data: contact } = await supabase
+        .from('crm_contacts')
+        .select('id')
+        .eq('email', email.toLowerCase().trim())
+        .maybeSingle()
+
+      if (contact?.id) {
+        await supabase
+          .from('tickets')
+          .update({ contact_id: contact.id })
+          .eq('id', ticket.id)
+
+        await supabase.from('crm_activity').insert({
+          type: 'ticket',
+          contact_id: contact.id,
+          description: `Support ticket submitted: "${subject}"`,
+          metadata: { ticket_id: ticket.id },
+        })
+      }
+    } catch {
+      // contact linking is optional — don't fail the ticket creation
     }
 
     // Fire-and-forget AI triage (don't block the response)
