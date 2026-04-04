@@ -104,12 +104,11 @@ export default function CRMTicketDetailPage({ params }: { params: Promise<{ id: 
   async function sendReply() {
     if (!reply.trim() || !ticket) return
     setSending(true)
-    const supabase = createSupabaseBrowser()
-    await supabase.from('ticket_messages').insert({
-      ticket_id: ticket.id,
-      sender_type: 'admin',
-      sender_name: 'Mark',
-      message: reply.trim(),
+    // Route through API so client gets email notification
+    await fetch(`/api/tickets/${ticket.token}`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ sender_type: 'admin', sender_name: 'Mark', message: reply.trim() }),
     })
     setReply('')
     setSending(false)
@@ -118,8 +117,12 @@ export default function CRMTicketDetailPage({ params }: { params: Promise<{ id: 
 
   async function updateStatus(newStatus: string) {
     if (!ticket) return
-    const supabase = createSupabaseBrowser()
-    await supabase.from('tickets').update({ status: newStatus, updated_at: new Date().toISOString() }).eq('id', ticket.id)
+    // Route through API so client gets email notification
+    await fetch(`/api/tickets/${ticket.id}/status`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status: newStatus }),
+    })
     load()
   }
 

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient as createAdminClient } from '@supabase/supabase-js'
 import { readFileSync } from 'fs'
 import { join } from 'path'
+import { notifyClientNewReply } from '@/lib/ticket-notifications'
 
 function getSupabaseAdmin() {
   return createAdminClient(
@@ -279,6 +280,13 @@ Analyze this ticket and respond with ONLY valid JSON in this exact format:
         .update({ status: 'in_progress', updated_at: now })
         .eq('id', ticket_id)
         .eq('status', 'open')
+
+      // Email client the AI response
+      notifyClientNewReply(
+        { clientName: ticket.name, clientEmail: ticket.email, subject: ticket.subject, token: ticket.token },
+        triage.auto_response,
+        'ConnectEx AI Support'
+      ).catch(() => {})
     }
 
     if (ticket.contact_id) {

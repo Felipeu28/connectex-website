@@ -3,10 +3,11 @@
 import { useEffect, useState } from 'react'
 import { CRMShell } from '@/components/crm/CRMShell'
 import { ContactModal } from '@/components/crm/ContactModal'
+import { ContactImportModal } from '@/components/crm/ContactImportModal'
 import { createSupabaseBrowser } from '@/lib/supabase-browser'
 import { PIPELINE_STAGES, type Contact } from '@/lib/crm-types'
 import { logActivity } from '@/lib/crm-activity'
-import { Plus, Search, Trash2, Pencil, ChevronLeft, ChevronRight } from 'lucide-react'
+import { Plus, Search, Trash2, Pencil, ChevronLeft, ChevronRight, Upload } from 'lucide-react'
 import Link from 'next/link'
 
 const PAGE_SIZE = 25
@@ -18,6 +19,7 @@ export default function ContactsPage() {
   const [search, setSearch] = useState('')
   const [stageFilter, setStageFilter] = useState<string>('all')
   const [modalOpen, setModalOpen] = useState(false)
+  const [importOpen, setImportOpen] = useState(false)
   const [editContact, setEditContact] = useState<Contact | null>(null)
   const [page, setPage] = useState(1)
   const [totalCount, setTotalCount] = useState(0)
@@ -108,13 +110,22 @@ export default function ContactsPage() {
               {totalCount} contact{totalCount !== 1 ? 's' : ''}
             </p>
           </div>
-          <button
-            onClick={() => { setEditContact(null); setModalOpen(true) }}
-            className="inline-flex items-center gap-2 px-4 py-2.5 bg-[#00C9A7] hover:bg-[#00b394] text-[#0F1B2D] font-semibold text-sm rounded-xl transition-colors"
-          >
-            <Plus className="w-4 h-4" />
-            Add Contact
-          </button>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setImportOpen(true)}
+              className="inline-flex items-center gap-2 px-4 py-2.5 bg-white/5 hover:bg-white/10 border border-white/10 text-white font-medium text-sm rounded-xl transition-colors"
+            >
+              <Upload className="w-4 h-4" />
+              Import CSV
+            </button>
+            <button
+              onClick={() => { setEditContact(null); setModalOpen(true) }}
+              className="inline-flex items-center gap-2 px-4 py-2.5 bg-[#00C9A7] hover:bg-[#00b394] text-[#0F1B2D] font-semibold text-sm rounded-xl transition-colors"
+            >
+              <Plus className="w-4 h-4" />
+              Add Contact
+            </button>
+          </div>
         </div>
 
         {/* Filters */}
@@ -255,6 +266,11 @@ export default function ContactsPage() {
         open={modalOpen}
         onClose={() => { setModalOpen(false); setEditContact(null) }}
         onSaved={loadContacts}
+      />
+      <ContactImportModal
+        open={importOpen}
+        onClose={() => setImportOpen(false)}
+        onImported={(count) => { loadContacts(); setImportOpen(false) }}
       />
     </CRMShell>
   )

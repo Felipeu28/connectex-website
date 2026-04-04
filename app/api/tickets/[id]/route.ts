@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase'
+import { notifyClientNewReply } from '@/lib/ticket-notifications'
 
 interface RouteContext {
   params: Promise<{ id: string }>
@@ -56,7 +57,7 @@ export async function POST(req: NextRequest, context: RouteContext) {
     // Look up the ticket by token to get the internal id
     const { data: ticket, error: ticketError } = await supabase
       .from('tickets')
-      .select('id, status')
+      .select('id, token, status, name, email, subject')
       .eq('token', token)
       .single()
 
@@ -94,6 +95,15 @@ export async function POST(req: NextRequest, context: RouteContext) {
       .from('tickets')
       .update({ updated_at: new Date().toISOString() })
       .eq('id', ticket.id)
+
+    // Email client when admin/AI replies
+    if (sender_type === 'admin') {
+      notifyClientNewReply(
+        { clientName: ticket.name, clientEmail: ticket.email, subject: ticket.subject, token: ticket.token },
+        message,
+        sender_name
+      ).catch(() => {})
+    }
 
     return NextResponse.json(newMessage, { status: 201 })
   } catch (err) {

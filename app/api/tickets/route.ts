@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase'
 import { createClient as createAdminClient } from '@supabase/supabase-js'
+import { notifyClientTicketCreated } from '@/lib/ticket-notifications'
 
 const PRIORITIES = ['low', 'medium', 'high', 'urgent'] as const
 
@@ -75,6 +76,14 @@ export async function POST(req: NextRequest) {
     } catch {
       // contact linking is optional — don't fail the ticket creation
     }
+
+    // Send confirmation email to client (fire-and-forget)
+    notifyClientTicketCreated({
+      clientName: name,
+      clientEmail: email,
+      subject,
+      token: ticket.token,
+    }).catch(() => {})
 
     // Fire-and-forget AI triage (don't block the response)
     const baseUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000'
