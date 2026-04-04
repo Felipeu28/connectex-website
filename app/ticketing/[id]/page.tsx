@@ -115,17 +115,20 @@ export default async function TicketViewPage({ params, searchParams }: TicketPag
           </div>
         </div>
 
-        {/* Attachment placeholder */}
+        {/* Attachment — inline image */}
         {ticket.image_url && (
           <div className="pt-3 border-t border-white/10">
-            <h2 className="text-sm font-medium text-[var(--color-text-muted)] mb-2">Attachment</h2>
-            <a
-              href={ticket.image_url}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="text-[var(--color-accent)] text-sm underline hover:no-underline"
-            >
-              View attachment
+            <h2 className="text-sm font-medium text-[var(--color-text-muted)] mb-3">Attachment</h2>
+            <a href={ticket.image_url} target="_blank" rel="noopener noreferrer" className="block group">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={ticket.image_url}
+                alt="Ticket attachment"
+                className="rounded-xl max-h-72 w-auto border border-white/10 group-hover:border-[var(--color-accent)]/40 transition-colors"
+              />
+              <p className="text-xs text-[var(--color-text-muted)] mt-1.5 hover:text-[var(--color-accent)]">
+                Click to open full size ↗
+              </p>
             </a>
           </div>
         )}

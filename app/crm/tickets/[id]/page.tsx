@@ -273,12 +273,28 @@ export default function CRMTicketDetailPage({ params }: { params: Promise<{ id: 
           )}
         </div>
 
-        {/* Original description */}
+        {/* Original description + attachment */}
         <div className="glass rounded-xl p-5">
           <p className="text-xs text-[var(--color-text-faint)] mb-2">
             Submitted {new Date(ticket.created_at).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric', hour: 'numeric', minute: '2-digit' })}
           </p>
           <p className="text-sm text-white whitespace-pre-wrap">{ticket.description}</p>
+          {ticket.image_url && (
+            <div className="mt-4 pt-4 border-t border-white/10">
+              <p className="text-xs text-[var(--color-text-faint)] mb-2">Attachment</p>
+              <a href={ticket.image_url} target="_blank" rel="noopener noreferrer" className="block group w-fit">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={ticket.image_url}
+                  alt="Ticket attachment"
+                  className="rounded-lg max-h-64 w-auto border border-white/10 group-hover:border-[#00C9A7]/40 transition-colors"
+                />
+                <p className="text-xs text-[var(--color-text-faint)] mt-1 group-hover:text-[#00C9A7]">
+                  Open full size ↗
+                </p>
+              </a>
+            </div>
+          )}
         </div>
 
         {/* Conversation */}

@@ -164,11 +164,12 @@ export async function POST(req: NextRequest) {
     const knowledgeContext = loadKnowledge(categories)
     const systemPrompt = buildSystemPrompt(knowledgeContext)
 
-    const userPrompt = `Ticket subject: ${ticket.subject}
+    const textPrompt = `Ticket subject: ${ticket.subject}
 Issue description: ${ticket.description}
 Priority: ${ticket.priority}
 ${ticket.company ? `Company: ${ticket.company}` : ''}
 Detected categories: ${categories.join(', ')}
+${ticket.image_url ? 'An attachment/screenshot has been included — analyze it for additional context (error messages, device state, UI issues visible in the image).' : ''}
 
 Analyze this ticket and respond with ONLY valid JSON in this exact format:
 {
@@ -179,6 +180,36 @@ Analyze this ticket and respond with ONLY valid JSON in this exact format:
   "priority_override": "low" | "medium" | "high" | "urgent" | null,
   "routing_reason": "one sentence for Mark explaining why this needs him (only if can_handle is false)"
 }`
+
+    // Build message content — include image if present
+    type ContentBlock =
+      | { type: 'text'; text: string }
+      | { type: 'image'; source: { type: 'base64'; media_type: string; data: string } }
+      | { type: 'image'; source: { type: 'url'; url: string } }
+
+    const userContent: ContentBlock[] = []
+
+    if (ticket.image_url) {
+      try {
+        // Fetch image and convert to base64 for Claude Vision
+        const imgRes = await fetch(ticket.image_url)
+        if (imgRes.ok) {
+          const contentType = imgRes.headers.get('content-type') ?? 'image/jpeg'
+          const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp']
+          const mediaType = allowedTypes.includes(contentType) ? contentType : 'image/jpeg'
+          const buffer = await imgRes.arrayBuffer()
+          const base64 = Buffer.from(buffer).toString('base64')
+          userContent.push({
+            type: 'image',
+            source: { type: 'base64', media_type: mediaType, data: base64 },
+          })
+        }
+      } catch {
+        // Image fetch failed — continue with text only
+      }
+    }
+
+    userContent.push({ type: 'text', text: textPrompt })
 
     const res = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
@@ -191,7 +222,7 @@ Analyze this ticket and respond with ONLY valid JSON in this exact format:
         model: 'claude-haiku-4-5-20251001',
         max_tokens: 1200,
         system: systemPrompt,
-        messages: [{ role: 'user', content: userPrompt }],
+        messages: [{ role: 'user', content: userContent }],
       }),
     })
 
@@ -265,6 +296,60 @@ Analyze this ticket and respond with ONLY valid JSON in this exact format:
           routing_reason: triage.routing_reason ?? null,
         },
       })
+    }
+
+    // Notify Mark via email when AI can't handle it
+    if (!shouldHandle) {
+      const resendKey = process.env.RESEND_API_KEY
+      const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://connectex-website.vercel.app'
+      if (resendKey) {
+        const priorityLabel = triage.priority_override ?? ticket.priority
+        const priorityColor: Record<string, string> = {
+          urgent: '#FF6B6B', high: '#F59E0B', medium: '#60A5FA', low: '#94A3B8',
+        }
+        const color = priorityColor[priorityLabel] ?? '#94A3B8'
+        const ticketUrl = `${siteUrl}/crm/tickets/${ticket_id}`
+        const clientUrl = `${siteUrl}/ticketing/${ticket.token}`
+
+        await fetch('https://api.resend.com/emails', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${resendKey}`,
+          },
+          body: JSON.stringify({
+            from: 'ConnectEx Support <support@connectex.net>',
+            to: ['mark@connectex.net'],
+            subject: `[${priorityLabel.toUpperCase()}] New ticket needs your attention: ${ticket.subject}`,
+            html: `
+              <div style="font-family: system-ui, sans-serif; max-width: 600px; margin: 0 auto; background: #0F1B2D; color: #E8EAED; border-radius: 12px; overflow: hidden;">
+                <div style="background: linear-gradient(135deg, #8B2BE2, #4B6CF7, #00C9A7); padding: 24px;">
+                  <h1 style="margin: 0; font-size: 20px; color: white;">New Support Ticket</h1>
+                  <p style="margin: 4px 0 0; color: rgba(255,255,255,0.8); font-size: 14px;">AI routed this to you — needs your expertise</p>
+                </div>
+                <div style="padding: 24px; space-y: 16px;">
+                  <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+                    <tr><td style="padding: 8px 0; color: #94A3B8; font-size: 13px; width: 120px;">Subject</td><td style="padding: 8px 0; font-weight: 600;">${ticket.subject}</td></tr>
+                    <tr><td style="padding: 8px 0; color: #94A3B8; font-size: 13px;">From</td><td style="padding: 8px 0;">${ticket.name} &lt;${ticket.email}&gt;${ticket.company ? ` · ${ticket.company}` : ''}</td></tr>
+                    <tr><td style="padding: 8px 0; color: #94A3B8; font-size: 13px;">Priority</td><td style="padding: 8px 0;"><span style="background: ${color}20; color: ${color}; padding: 2px 8px; border-radius: 999px; font-size: 12px; font-weight: 600;">${priorityLabel.toUpperCase()}</span></td></tr>
+                    <tr><td style="padding: 8px 0; color: #94A3B8; font-size: 13px;">Category</td><td style="padding: 8px 0;">${triage.category}</td></tr>
+                    <tr><td style="padding: 8px 0; color: #94A3B8; font-size: 13px;">Why AI routed</td><td style="padding: 8px 0; color: #F59E0B;">${triage.routing_reason}</td></tr>
+                  </table>
+                  <div style="background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.1); border-radius: 8px; padding: 16px; margin-bottom: 20px;">
+                    <p style="margin: 0 0 8px; font-size: 12px; color: #94A3B8; text-transform: uppercase; letter-spacing: 0.05em;">Description</p>
+                    <p style="margin: 0; font-size: 14px; white-space: pre-wrap;">${ticket.description}</p>
+                  </div>
+                  ${ticket.image_url ? `<div style="margin-bottom: 20px;"><p style="margin: 0 0 8px; font-size: 12px; color: #94A3B8; text-transform: uppercase; letter-spacing: 0.05em;">Attachment</p><img src="${ticket.image_url}" style="max-width: 100%; border-radius: 8px; border: 1px solid rgba(255,255,255,0.1);" alt="Ticket attachment" /></div>` : ''}
+                  <div style="display: flex; gap: 12px;">
+                    <a href="${ticketUrl}" style="display: inline-block; background: #00C9A7; color: #0F1B2D; font-weight: 600; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-size: 14px;">Open in CRM</a>
+                    <a href="${clientUrl}" style="display: inline-block; background: rgba(255,255,255,0.08); color: #E8EAED; font-weight: 600; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-size: 14px;">Client View</a>
+                  </div>
+                </div>
+              </div>
+            `,
+          }),
+        }).catch((err) => console.error('Mark notification email failed:', err))
+      }
     }
 
     return NextResponse.json({

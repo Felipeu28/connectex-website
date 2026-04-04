@@ -3,8 +3,9 @@
 import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { useRouter } from 'next/navigation'
-import { Send, Upload, AlertCircle } from 'lucide-react'
+import { Send, Upload, AlertCircle, X, ImageIcon } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
+import { createSupabaseBrowser } from '@/lib/supabase-browser'
 import type { TicketPriority } from '@/lib/ticket-types'
 
 interface FormData {
@@ -14,45 +15,81 @@ interface FormData {
   subject: string
   description: string
   priority: TicketPriority
-  image: FileList | null
 }
 
 export function TicketForm() {
   const router = useRouter()
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
-  const [fileName, setFileName] = useState<string | null>(null)
+  const [selectedFile, setSelectedFile] = useState<File | null>(null)
+  const [preview, setPreview] = useState<string | null>(null)
 
   const {
     register,
     handleSubmit,
     formState: { errors },
   } = useForm<FormData>({
-    defaultValues: {
-      priority: 'medium',
-    },
+    defaultValues: { priority: 'medium' },
   })
+
+  function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0] ?? null
+    setSelectedFile(file)
+    if (file && file.type.startsWith('image/')) {
+      setPreview(URL.createObjectURL(file))
+    } else {
+      setPreview(null)
+    }
+  }
+
+  function clearFile() {
+    setSelectedFile(null)
+    setPreview(null)
+  }
+
+  async function uploadFile(file: File): Promise<string | null> {
+    const supabase = createSupabaseBrowser()
+    const ext = file.name.split('.').pop() ?? 'bin'
+    const path = `${Date.now()}-${Math.random().toString(36).slice(2)}.${ext}`
+
+    const { error } = await supabase.storage
+      .from('ticket-attachments')
+      .upload(path, file, { cacheControl: '3600', upsert: false })
+
+    if (error) {
+      console.error('Storage upload error:', error)
+      return null
+    }
+
+    const { data } = supabase.storage.from('ticket-attachments').getPublicUrl(path)
+    return data.publicUrl
+  }
 
   const onSubmit = async (data: FormData) => {
     setIsSubmitting(true)
     setSubmitError(null)
 
     try {
-      // Placeholder: if an image was selected, we would upload to Supabase Storage here
-      // and get back a URL. For now, image_url is omitted.
-      const payload = {
-        name: data.name,
-        email: data.email,
-        company: data.company || undefined,
-        subject: data.subject,
-        description: data.description,
-        priority: data.priority,
+      // Upload image if provided
+      let image_url: string | undefined
+      if (selectedFile) {
+        const url = await uploadFile(selectedFile)
+        if (!url) throw new Error('Failed to upload attachment. Please try again.')
+        image_url = url
       }
 
       const res = await fetch('/api/tickets', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
+        body: JSON.stringify({
+          name: data.name,
+          email: data.email,
+          company: data.company || undefined,
+          subject: data.subject,
+          description: data.description,
+          priority: data.priority,
+          image_url,
+        }),
       })
 
       if (!res.ok) {
@@ -71,9 +108,7 @@ export function TicketForm() {
 
   const inputClasses =
     'w-full rounded-xl bg-white/5 border border-white/10 px-4 py-3 text-[var(--color-text-light)] placeholder-[var(--color-text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)] focus:border-transparent transition-all'
-
   const labelClasses = 'block text-sm font-medium text-[var(--color-text-light)] mb-1.5'
-
   const errorClasses = 'mt-1 text-xs text-[var(--color-cta)]'
 
   return (
@@ -105,10 +140,7 @@ export function TicketForm() {
             placeholder="you@company.com"
             {...register('email', {
               required: 'Email is required',
-              pattern: {
-                value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
-                message: 'Enter a valid email',
-              },
+              pattern: { value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/, message: 'Enter a valid email' },
             })}
             aria-invalid={errors.email ? 'true' : 'false'}
           />
@@ -164,12 +196,10 @@ export function TicketForm() {
         )}
       </div>
 
-      {/* Priority & Image */}
+      {/* Priority & Attachment */}
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
         <div>
-          <label htmlFor="priority" className={labelClasses}>
-            Priority
-          </label>
+          <label htmlFor="priority" className={labelClasses}>Priority</label>
           <select
             id="priority"
             className={inputClasses + ' appearance-none cursor-pointer'}
@@ -182,35 +212,52 @@ export function TicketForm() {
           </select>
         </div>
         <div>
-          <label htmlFor="image" className={labelClasses}>
+          <label className={labelClasses}>
             Attachment <span className="text-[var(--color-text-muted)] text-xs">(optional)</span>
           </label>
-          <label
-            htmlFor="image"
-            className={
-              inputClasses +
-              ' flex items-center gap-2 cursor-pointer hover:border-[var(--color-accent)]/50'
-            }
-          >
-            <Upload className="w-4 h-4 text-[var(--color-text-muted)] shrink-0" aria-hidden="true" />
-            <span className="text-[var(--color-text-muted)] text-sm truncate">
-              {fileName || 'Upload screenshot or file'}
-            </span>
-          </label>
+          {selectedFile ? (
+            <div className="flex items-center gap-2 rounded-xl bg-white/5 border border-[var(--color-accent)]/30 px-4 py-3">
+              <ImageIcon className="w-4 h-4 text-[var(--color-accent)] shrink-0" />
+              <span className="text-sm text-[var(--color-text-light)] truncate flex-1">
+                {selectedFile.name}
+              </span>
+              <button
+                type="button"
+                onClick={clearFile}
+                className="shrink-0 text-[var(--color-text-muted)] hover:text-[var(--color-cta)] transition-colors"
+                aria-label="Remove attachment"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          ) : (
+            <label
+              htmlFor="image"
+              className={inputClasses + ' flex items-center gap-2 cursor-pointer hover:border-[var(--color-accent)]/50'}
+            >
+              <Upload className="w-4 h-4 text-[var(--color-text-muted)] shrink-0" aria-hidden="true" />
+              <span className="text-[var(--color-text-muted)] text-sm truncate">
+                Upload screenshot or image
+              </span>
+            </label>
+          )}
           <input
             id="image"
             type="file"
-            accept="image/*,.pdf,.doc,.docx"
+            accept="image/*"
             className="sr-only"
-            {...register('image', {
-              onChange: (e: React.ChangeEvent<HTMLInputElement>) => {
-                const file = e.target.files?.[0]
-                setFileName(file ? file.name : null)
-              },
-            })}
+            onChange={handleFileChange}
           />
         </div>
       </div>
+
+      {/* Image preview */}
+      {preview && (
+        <div className="rounded-xl overflow-hidden border border-white/10">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src={preview} alt="Attachment preview" className="w-full max-h-48 object-cover" />
+        </div>
+      )}
 
       {/* Error banner */}
       {submitError && (
@@ -223,7 +270,6 @@ export function TicketForm() {
         </div>
       )}
 
-      {/* Submit */}
       <Button
         type="submit"
         variant="cta"
@@ -232,7 +278,7 @@ export function TicketForm() {
         icon={<Send className="w-4 h-4" aria-hidden="true" />}
         className="w-full"
       >
-        Submit Ticket
+        {isSubmitting ? 'Submitting...' : 'Submit Ticket'}
       </Button>
     </form>
   )
