@@ -3,6 +3,7 @@ import { createClient as createAdminClient } from '@supabase/supabase-js'
 import { readFileSync } from 'fs'
 import { join } from 'path'
 import { notifyClientNewReply } from '@/lib/ticket-notifications'
+import { callGeminiJSON, GEMINI_FLASH, type GeminiPart } from '@/lib/gemini'
 
 function getSupabaseAdmin() {
   return createAdminClient(
@@ -133,9 +134,8 @@ ${knowledgeContext}`
 // ─── Route handler ───────────────────────────────────────────────────────────
 
 export async function POST(req: NextRequest) {
-  const apiKey = process.env.ANTHROPIC_API_KEY
-  if (!apiKey) {
-    return NextResponse.json({ error: 'ANTHROPIC_API_KEY not set' }, { status: 503 })
+  if (!process.env.GEMINI_API_KEY) {
+    return NextResponse.json({ error: 'GEMINI_API_KEY not set' }, { status: 503 })
   }
 
   try {
@@ -182,72 +182,44 @@ Analyze this ticket and respond with ONLY valid JSON in this exact format:
   "routing_reason": "one sentence for Mark explaining why this needs him (only if can_handle is false)"
 }`
 
-    // Build message content — include image if present
-    type ContentBlock =
-      | { type: 'text'; text: string }
-      | { type: 'image'; source: { type: 'base64'; media_type: string; data: string } }
-      | { type: 'image'; source: { type: 'url'; url: string } }
-
-    const userContent: ContentBlock[] = []
+    // Build Gemini parts — include image if present (Gemini Vision)
+    const parts: GeminiPart[] = []
 
     if (ticket.image_url) {
       try {
-        // Fetch image and convert to base64 for Claude Vision
         const imgRes = await fetch(ticket.image_url)
         if (imgRes.ok) {
           const contentType = imgRes.headers.get('content-type') ?? 'image/jpeg'
           const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp']
-          const mediaType = allowedTypes.includes(contentType) ? contentType : 'image/jpeg'
+          const mimeType = allowedTypes.includes(contentType) ? contentType : 'image/jpeg'
           const buffer = await imgRes.arrayBuffer()
-          const base64 = Buffer.from(buffer).toString('base64')
-          userContent.push({
-            type: 'image',
-            source: { type: 'base64', media_type: mediaType, data: base64 },
-          })
+          const data = Buffer.from(buffer).toString('base64')
+          parts.push({ inlineData: { mimeType, data } })
         }
       } catch {
         // Image fetch failed — continue with text only
       }
     }
 
-    userContent.push({ type: 'text', text: textPrompt })
+    parts.push({ text: textPrompt })
 
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        'x-api-key': apiKey,
-        'anthropic-version': '2023-06-01',
-      },
-      body: JSON.stringify({
-        model: 'claude-haiku-4-5-20251001',
-        max_tokens: 1200,
-        system: systemPrompt,
-        messages: [{ role: 'user', content: userContent }],
-      }),
-    })
-
-    if (!res.ok) {
-      console.error('Anthropic API error:', await res.text())
-      return NextResponse.json({ error: 'AI triage failed' }, { status: 502 })
-    }
-
-    const aiData = await res.json()
-    const text = aiData.content?.[0]?.text ?? ''
-    const jsonMatch = text.match(/\{[\s\S]*\}/)
-
-    if (!jsonMatch) {
-      console.error('Failed to parse AI response:', text)
-      return NextResponse.json({ error: 'Failed to parse AI response' }, { status: 500 })
-    }
-
-    const triage = JSON.parse(jsonMatch[0]) as {
+    const triage = await callGeminiJSON<{
       can_handle: boolean
       confidence: number
       category: string
       auto_response: string
       priority_override: string | null
       routing_reason: string
+    }>({
+      model: GEMINI_FLASH,
+      systemInstruction: systemPrompt,
+      parts,
+      maxOutputTokens: 1200,
+    })
+
+    if (!triage) {
+      console.error('Failed to parse Gemini triage response')
+      return NextResponse.json({ error: 'AI triage failed' }, { status: 502 })
     }
 
     // If confidence < 60, always route to Mark even if AI thinks it can handle it
