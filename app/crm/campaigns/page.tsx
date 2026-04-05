@@ -4,7 +4,7 @@ import { useEffect, useState, useCallback } from 'react'
 import { CRMShell } from '@/components/crm/CRMShell'
 import { createSupabaseBrowser } from '@/lib/supabase-browser'
 import { PIPELINE_STAGES, type Campaign, type PipelineStage } from '@/lib/crm-types'
-import { Plus, Sparkles, Pencil, Trash2, X, Eye, Send, Users, Filter, Loader2, CheckCircle2, AlertCircle } from 'lucide-react'
+import { Plus, Sparkles, Pencil, Trash2, X, Eye, Send, Users, Filter, Loader2, CheckCircle2, AlertCircle, Search, Clock, UserCheck } from 'lucide-react'
 
 const STATUS_CONFIG: Record<string, { label: string; color: string }> = {
   draft: { label: 'Draft', color: '#94A3B8' },
@@ -14,7 +14,7 @@ const STATUS_CONFIG: Record<string, { label: string; color: string }> = {
   paused: { label: 'Paused', color: '#FF6B6B' },
 }
 
-type RecipientFilter = 'all' | { stage: PipelineStage }
+type RecipientFilter = 'all' | { stage: PipelineStage } | { ids: string[] }
 
 export default function CampaignsPage() {
   const [campaigns, setCampaigns] = useState<Campaign[]>([])
@@ -41,6 +41,16 @@ export default function CampaignsPage() {
   const [sending, setSending] = useState(false)
   const [sendResult, setSendResult] = useState<{ success: boolean; sent: number; failed: number; errors?: string[] } | null>(null)
 
+  // Specific-contacts picker state
+  const [contactSearch, setContactSearch] = useState('')
+  const [contactSearchResults, setContactSearchResults] = useState<{ id: string; name: string; email: string | null; company: string | null }[]>([])
+  const [selectedContacts, setSelectedContacts] = useState<Map<string, { name: string; email: string | null }>>(new Map())
+  const [searchingContacts, setSearchingContacts] = useState(false)
+
+  // Schedule state
+  const [scheduleMode, setScheduleMode] = useState(false)
+  const [scheduledAt, setScheduledAt] = useState('')
+
   const load = useCallback(async () => {
     const supabase = createSupabaseBrowser()
     const { data } = await supabase.from('crm_campaigns').select('*').order('created_at', { ascending: false })
@@ -58,6 +68,12 @@ export default function CampaignsPage() {
   useEffect(() => {
     if (!sendModalOpen) return
 
+    // For specific-contacts mode, count is just the selected set
+    if (recipientFilter !== 'all' && 'ids' in recipientFilter) {
+      setRecipientCount(recipientFilter.ids.length)
+      return
+    }
+
     ;(async () => {
       setLoadingCount(true)
       const supabase = createSupabaseBrowser()
@@ -67,7 +83,7 @@ export default function CampaignsPage() {
         .select('id', { count: 'exact', head: true })
         .not('email', 'is', null)
 
-      if (recipientFilter !== 'all' && recipientFilter.stage) {
+      if (recipientFilter !== 'all' && 'stage' in recipientFilter) {
         query = query.eq('stage', recipientFilter.stage)
       }
 
@@ -76,6 +92,27 @@ export default function CampaignsPage() {
       setLoadingCount(false)
     })()
   }, [sendModalOpen, recipientFilter])
+
+  // Contact search (debounced)
+  useEffect(() => {
+    if (!contactSearch.trim()) {
+      setContactSearchResults([])
+      return
+    }
+    const timer = setTimeout(async () => {
+      setSearchingContacts(true)
+      const supabase = createSupabaseBrowser()
+      const { data } = await supabase
+        .from('crm_contacts')
+        .select('id, name, email, company')
+        .not('email', 'is', null)
+        .or(`name.ilike.%${contactSearch}%,email.ilike.%${contactSearch}%,company.ilike.%${contactSearch}%`)
+        .limit(10)
+      setContactSearchResults(data ?? [])
+      setSearchingContacts(false)
+    }, 250)
+    return () => clearTimeout(timer)
+  }, [contactSearch])
 
   function openEditor(campaign?: Campaign) {
     if (campaign) {
@@ -154,22 +191,61 @@ export default function CampaignsPage() {
     setRecipientCount(null)
     setSendResult(null)
     setSending(false)
+    setContactSearch('')
+    setContactSearchResults([])
+    setSelectedContacts(new Map())
+    setScheduleMode(false)
+    setScheduledAt('')
     setSendModalOpen(true)
   }
 
   function closeSendModal() {
+    const wasSuccess = sendResult?.success
     setSendModalOpen(false)
     setSendCampaign(null)
     setSendResult(null)
-    if (sendResult?.success) {
+    setSelectedContacts(new Map())
+    setContactSearch('')
+    if (wasSuccess) {
       load()
     }
+  }
+
+  function toggleContact(c: { id: string; name: string; email: string | null }) {
+    setSelectedContacts((prev) => {
+      const next = new Map(prev)
+      if (next.has(c.id)) {
+        next.delete(c.id)
+      } else {
+        next.set(c.id, { name: c.name, email: c.email })
+      }
+      setRecipientFilter({ ids: [...next.keys()] })
+      return next
+    })
   }
 
   async function handleSend() {
     if (!sendCampaign || sending) return
     setSending(true)
     setSendResult(null)
+
+    // Schedule mode: just save scheduled_at, don't send now
+    if (scheduleMode) {
+      if (!scheduledAt) { setSending(false); return }
+      try {
+        const supabase = createSupabaseBrowser()
+        await supabase
+          .from('crm_campaigns')
+          .update({ status: 'scheduled', scheduled_at: new Date(scheduledAt).toISOString(), updated_at: new Date().toISOString() })
+          .eq('id', sendCampaign.id)
+        setSendResult({ success: true, sent: 0, failed: 0 })
+        load()
+      } catch {
+        setSendResult({ success: false, sent: 0, failed: 0, errors: ['Failed to schedule campaign'] })
+      }
+      setSending(false)
+      return
+    }
 
     try {
       const filterPayload = recipientFilter === 'all' ? 'all' : recipientFilter
@@ -183,7 +259,6 @@ export default function CampaignsPage() {
 
       if (res.ok) {
         setSendResult({ success: true, sent: data.sent, failed: data.failed, errors: data.errors })
-        // Refresh campaigns list to update status
         load()
       } else {
         setSendResult({ success: false, sent: 0, failed: 0, errors: [data.error || 'Failed to send campaign'] })
@@ -278,6 +353,12 @@ export default function CampaignsPage() {
                       <span>Sent: {c.sent_count}</span>
                       <span>Opens: {c.open_count}</span>
                       <span>Clicks: {c.click_count}</span>
+                    </div>
+                  )}
+                  {c.status === 'scheduled' && c.scheduled_at && (
+                    <div className="flex items-center gap-1.5 text-xs text-[#60A5FA]">
+                      <Clock className="w-3 h-3" />
+                      <span>Scheduled {new Date(c.scheduled_at).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}</span>
                     </div>
                   )}
                   {c.status === 'sending' && (
@@ -432,7 +513,7 @@ export default function CampaignsPage() {
             {!sendResult ? (
               <>
                 {/* Recipient filter */}
-                <div className="mb-5">
+                <div className="mb-4">
                   <label className="flex items-center gap-2 text-sm font-medium text-[var(--color-text-muted)] mb-3">
                     <Filter className="w-4 h-4" />
                     Choose Recipients
@@ -444,7 +525,7 @@ export default function CampaignsPage() {
                         type="radio"
                         name="recipientFilter"
                         checked={recipientFilter === 'all'}
-                        onChange={() => setRecipientFilter('all')}
+                        onChange={() => { setRecipientFilter('all'); setSelectedContacts(new Map()) }}
                         className="accent-[#00C9A7]"
                         disabled={sending}
                       />
@@ -462,8 +543,8 @@ export default function CampaignsPage() {
                         <input
                           type="radio"
                           name="recipientFilter"
-                          checked={recipientFilter !== 'all' && recipientFilter.stage === stage.key}
-                          onChange={() => setRecipientFilter({ stage: stage.key })}
+                          checked={recipientFilter !== 'all' && 'stage' in recipientFilter && recipientFilter.stage === stage.key}
+                          onChange={() => { setRecipientFilter({ stage: stage.key }); setSelectedContacts(new Map()) }}
                           className="accent-[#00C9A7]"
                           disabled={sending}
                         />
@@ -473,16 +554,106 @@ export default function CampaignsPage() {
                         </div>
                       </label>
                     ))}
+
+                    {/* Specific contacts option */}
+                    <label className="flex items-center gap-3 p-3 rounded-xl bg-white/[0.03] border border-white/[0.06] hover:bg-white/[0.06] cursor-pointer transition-colors">
+                      <input
+                        type="radio"
+                        name="recipientFilter"
+                        checked={recipientFilter !== 'all' && 'ids' in recipientFilter}
+                        onChange={() => { setRecipientFilter({ ids: [] }); setSelectedContacts(new Map()) }}
+                        className="accent-[#00C9A7]"
+                        disabled={sending}
+                      />
+                      <div className="flex items-center gap-2">
+                        <UserCheck className="w-4 h-4 text-[#A78BFA]" />
+                        <span className="text-sm text-white">Specific Contacts</span>
+                      </div>
+                    </label>
                   </div>
                 </div>
 
+                {/* Specific contacts picker */}
+                {recipientFilter !== 'all' && 'ids' in recipientFilter && (
+                  <div className="mb-4 p-3 rounded-xl bg-white/[0.03] border border-white/[0.08] space-y-2">
+                    <div className="relative">
+                      <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[var(--color-text-faint)]" />
+                      <input
+                        type="text"
+                        value={contactSearch}
+                        onChange={(e) => setContactSearch(e.target.value)}
+                        placeholder="Search contacts to add..."
+                        className="w-full pl-8 pr-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white placeholder:text-[var(--color-text-faint)] focus:outline-none focus:ring-1 focus:ring-[#A78BFA] text-sm"
+                      />
+                      {searchingContacts && <Loader2 className="absolute right-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 animate-spin text-[var(--color-text-faint)]" />}
+                    </div>
+
+                    {contactSearchResults.length > 0 && (
+                      <div className="space-y-1 max-h-36 overflow-y-auto">
+                        {contactSearchResults.map((c) => (
+                          <button
+                            key={c.id}
+                            onClick={() => toggleContact(c)}
+                            className={`w-full flex items-center justify-between px-2.5 py-1.5 rounded-lg text-left text-sm transition-colors ${selectedContacts.has(c.id) ? 'bg-[#A78BFA]/15 text-[#A78BFA]' : 'hover:bg-white/5 text-white'}`}
+                          >
+                            <span>{c.name} {c.company ? <span className="text-xs opacity-60">· {c.company}</span> : null}</span>
+                            {selectedContacts.has(c.id) && <CheckCircle2 className="w-3.5 h-3.5 flex-shrink-0" />}
+                          </button>
+                        ))}
+                      </div>
+                    )}
+
+                    {selectedContacts.size > 0 && (
+                      <div className="pt-1 border-t border-white/8">
+                        <p className="text-xs text-[var(--color-text-muted)] mb-1.5">{selectedContacts.size} selected:</p>
+                        <div className="flex flex-wrap gap-1">
+                          {[...selectedContacts.entries()].map(([id, c]) => (
+                            <span key={id} className="inline-flex items-center gap-1 text-xs bg-[#A78BFA]/15 text-[#A78BFA] px-2 py-0.5 rounded-full">
+                              {c.name}
+                              <button onClick={() => toggleContact({ id, name: c.name, email: c.email })} className="hover:text-white">
+                                <X className="w-3 h-3" />
+                              </button>
+                            </span>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
                 {/* Recipient count preview */}
-                <div className="mb-5 p-3 rounded-xl bg-white/[0.03] border border-white/[0.06] flex items-center justify-between">
+                <div className="mb-4 p-3 rounded-xl bg-white/[0.03] border border-white/[0.06] flex items-center justify-between">
                   <span className="text-sm text-[var(--color-text-muted)]">Recipients with email:</span>
                   {loadingCount ? (
                     <Loader2 className="w-4 h-4 animate-spin text-[var(--color-text-muted)]" />
                   ) : (
                     <span className="text-sm font-semibold text-white">{recipientCount ?? '--'}</span>
+                  )}
+                </div>
+
+                {/* Schedule toggle */}
+                <div className="mb-5">
+                  <label className="flex items-center gap-3 p-3 rounded-xl bg-white/[0.03] border border-white/[0.06] cursor-pointer hover:bg-white/[0.06] transition-colors">
+                    <input
+                      type="checkbox"
+                      checked={scheduleMode}
+                      onChange={(e) => setScheduleMode(e.target.checked)}
+                      className="accent-[#60A5FA]"
+                      disabled={sending}
+                    />
+                    <div className="flex items-center gap-2">
+                      <Clock className="w-4 h-4 text-[#60A5FA]" />
+                      <span className="text-sm text-white">Schedule for later</span>
+                    </div>
+                  </label>
+                  {scheduleMode && (
+                    <input
+                      type="datetime-local"
+                      value={scheduledAt}
+                      onChange={(e) => setScheduledAt(e.target.value)}
+                      min={new Date().toISOString().slice(0, 16)}
+                      className="mt-2 w-full px-3 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white text-sm focus:outline-none focus:ring-2 focus:ring-[#60A5FA]"
+                    />
                   )}
                 </div>
 
@@ -497,13 +668,18 @@ export default function CampaignsPage() {
                   </button>
                   <button
                     onClick={handleSend}
-                    disabled={sending || recipientCount === 0 || recipientCount === null}
+                    disabled={sending || (!scheduleMode && (recipientCount === 0 || recipientCount === null)) || (scheduleMode && !scheduledAt)}
                     className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-semibold bg-[#00C9A7] hover:bg-[#00b394] text-[#0F1B2D] rounded-xl transition-colors disabled:opacity-50"
                   >
                     {sending ? (
                       <>
                         <Loader2 className="w-4 h-4 animate-spin" />
-                        Sending...
+                        {scheduleMode ? 'Scheduling...' : 'Sending...'}
+                      </>
+                    ) : scheduleMode ? (
+                      <>
+                        <Clock className="w-4 h-4" />
+                        Schedule Campaign
                       </>
                     ) : (
                       <>
@@ -521,11 +697,15 @@ export default function CampaignsPage() {
                   <div className="flex items-start gap-3 p-4 rounded-xl bg-[#00C9A7]/10 border border-[#00C9A7]/20">
                     <CheckCircle2 className="w-5 h-5 text-[#00C9A7] mt-0.5 shrink-0" />
                     <div>
-                      <p className="text-sm font-medium text-white">Campaign sent successfully</p>
-                      <p className="text-xs text-[var(--color-text-muted)] mt-1">
-                        {sendResult.sent} email{sendResult.sent !== 1 ? 's' : ''} delivered
-                        {sendResult.failed > 0 && `, ${sendResult.failed} failed`}
+                      <p className="text-sm font-medium text-white">
+                        {sendResult.sent === 0 ? 'Campaign scheduled successfully' : 'Campaign sent successfully'}
                       </p>
+                      {sendResult.sent > 0 && (
+                        <p className="text-xs text-[var(--color-text-muted)] mt-1">
+                          {sendResult.sent} email{sendResult.sent !== 1 ? 's' : ''} delivered
+                          {sendResult.failed > 0 && `, ${sendResult.failed} failed`}
+                        </p>
+                      )}
                     </div>
                   </div>
                 ) : (
