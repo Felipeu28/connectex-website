@@ -170,7 +170,7 @@ async function notifyMark(ticket: {
   const resendKey = process.env.RESEND_API_KEY
   if (!resendKey) return
 
-  const siteUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://connectex-website.vercel.app'
+  const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://connectex-website.vercel.app').trim()
   const priorityLabel = triage.priority_override ?? ticket.priority
   const priorityColor: Record<string, string> = {
     urgent: '#FF6B6B', high: '#F59E0B', medium: '#60A5FA', low: '#94A3B8',

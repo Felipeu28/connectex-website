@@ -1,4 +1,4 @@
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://connectex-website.vercel.app'
+const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://connectex-website.vercel.app').trim()
 const RESEND_KEY = process.env.RESEND_API_KEY
 const FROM = 'ConnectEx Support <support@connectex.net>'
 

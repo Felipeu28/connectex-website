@@ -4,7 +4,7 @@ function getOAuth2Client(tokens: { access_token: string; refresh_token: string }
   const client = new google.auth.OAuth2(
     process.env.GOOGLE_CLIENT_ID,
     process.env.GOOGLE_CLIENT_SECRET,
-    `${process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000'}/api/google/callback`
+    `${(process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000').trim()}/api/google/callback`
   )
   client.setCredentials(tokens)
   return client
