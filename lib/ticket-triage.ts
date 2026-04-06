@@ -25,6 +25,19 @@ const CATEGORY_KEYWORDS: Record<TicketCategory, string[]> = {
     'galaxy', 'pixel', 'apn', 'signal', 'network bars', 'mobile data', 'roaming',
     'business internet', 'fios', 'verizon router', 'one talk', 'mdm', 'bmm',
     'device management', 'knox', 'corporate phone', 'company phone',
+    // Verizon Business Internet
+    'g3100', 'cr1000', 'g1100', 'fios business', '5g business', 'lte business',
+    'fixed wireless', 'business gateway', 'ont box', 'ont light',
+    // One Talk desk phones
+    'polycom', 'polycom vvx', 'vvx 300', 'vvx 400', 'vvx 500',
+    'yealink', 't33g', 't43u', 't54w', 'desk phone', 'office phone',
+    'not registered', 'no dial tone', 'poe switch', 'power over ethernet',
+    'one talk admin', 'onetalk',
+    // Network Extender
+    'network extender', 'cell extender', 'signal extender', 'indoor coverage',
+    'no signal inside', 'poor signal', 'weak signal', 'dead zone',
+    // General Verizon Business
+    'verizon business', 'vzw', 'verizon account', 'business center',
   ],
   microsoft365: [
     'microsoft', 'office 365', 'microsoft 365', 'outlook', 'teams', 'onedrive',
@@ -35,9 +48,11 @@ const CATEGORY_KEYWORDS: Record<TicketCategory, string[]> = {
   ucaas: [
     'voip', 'phone system', 'ringcentral', 'dial tone', 'desk phone', 'softphone',
     'sip', 'pbx', 'extension', 'voicemail', 'call forwarding', 'auto attendant',
-    'hunt group', 'teams phone', 'calling plan', 'business phone', 'polycom',
-    'yealink', 'one talk', 'ucaas', 'cloud phone', 'virtual phone', 'ivr',
+    'hunt group', 'teams phone', 'calling plan', 'business phone',
+    'ucaas', 'cloud phone', 'virtual phone', 'ivr',
     'no dial tone', "can't make calls", 'calls dropping',
+    'one way audio', 'choppy audio', 'robotic voice', 'echo on call',
+    'phone not ringing', 'missed calls', 'office phone',
   ],
   general: [],
 }
