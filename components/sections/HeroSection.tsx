@@ -50,7 +50,6 @@ export function HeroSection() {
           {/* Headline */}
           <h1 className="text-4xl sm:text-5xl lg:text-6xl xl:text-7xl font-bold leading-[1.08] tracking-tight mb-7">
             <MotionReveal delay={0.1}>
-              <span className="text-[var(--text)]">Austin&rsquo;s </span>
               <span className="gradient-text">Vendor-Neutral</span>
             </MotionReveal>
             <br />
@@ -59,7 +58,7 @@ export function HeroSection() {
             </MotionReveal>
             <br />
             <MotionReveal delay={0.2}>
-              <span className="text-[var(--text-muted)] font-medium">for Small Business</span>
+              <span className="text-[var(--text-muted)] font-medium">for Small Business, Nationwide</span>
             </MotionReveal>
           </h1>
 
