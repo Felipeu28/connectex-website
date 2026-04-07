@@ -12,6 +12,7 @@ import { Button } from './Button'
 const navLinks = [
   { href: '/solutions', label: 'Solutions' },
   { href: '/marketplace', label: 'Marketplace' },
+  { href: '/preferred-vendors', label: 'Preferred Vendors' },
   { href: '/resources', label: 'Resources' },
   { href: '/about', label: 'About' },
 ]

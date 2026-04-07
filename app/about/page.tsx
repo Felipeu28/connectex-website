@@ -118,11 +118,11 @@ export default function AboutPage() {
         <div className="max-w-6xl mx-auto grid md:grid-cols-2 gap-12 items-center">
           <div>
             <p className="text-[#00C9A7] text-sm font-semibold uppercase tracking-widest mb-4">About Connectex</p>
-            <h1 className="text-4xl sm:text-5xl font-bold text-[var(--text)] leading-tight mb-5">
-              Mark Polanco &amp; Connectex Solutions
+            <h1 className="text-4xl sm:text-5xl font-bold text-[var(--text)] leading-tight mb-6">
+              Vendor-Neutral Technology Advisor for Austin Small Business
             </h1>
             <p className="text-[var(--text-muted)] text-lg leading-relaxed mb-8">
-              Technology adviser with AppDirect and founder of Connectex Solutions. Helping businesses across the country cut through complexity and make smarter decisions about cloud, connectivity, and digital transformation.
+              Mark Polanco, founder of Connectex Solutions and technology adviser with AppDirect. 20+ years across telecom, sales leadership, and technical operations &mdash; helping businesses across the country make smarter decisions about IT, cloud, and connectivity.
             </p>
             <div className="flex flex-wrap gap-3">
               {certifications.map((cert) => (

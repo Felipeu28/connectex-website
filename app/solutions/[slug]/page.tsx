@@ -2,6 +2,7 @@ import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
 import { solutions, getSolution } from '@/data/solutions'
+import { posts } from '@/data/posts'
 import { solutionIcons, Check } from '@/components/ui/Icons'
 import { Button } from '@/components/ui/Button'
 import { SectionWrapper } from '@/components/ui/SectionWrapper'
@@ -51,6 +52,15 @@ export async function generateMetadata({
   }
 }
 
+const relatedPostSlugs: Record<string, string[]> = {
+  'managed-it': ['managed-it-cost-austin', 'what-is-a-technology-advisor'],
+  cybersecurity: ['smb-cybersecurity-checklist-2026', 'cybersecurity-threats-austin-smbs-2026'],
+  cloud: ['what-is-a-technology-advisor'],
+  communications: ['msp-vs-it-consultant-vs-technology-advisor'],
+  'ai-automation': ['what-is-a-technology-advisor'],
+  connectivity: ['what-is-a-technology-advisor'],
+}
+
 export default async function SolutionPage({
   params,
 }: {
@@ -61,6 +71,10 @@ export default async function SolutionPage({
   if (!solution) notFound()
 
   const Icon = solutionIcons[solution.slug]
+
+  const relatedPosts = (relatedPostSlugs[solution.slug] ?? [])
+    .map((s) => posts.find((p) => p.slug === s))
+    .filter(Boolean) as typeof posts
 
   return (
     <>
@@ -235,6 +249,35 @@ export default async function SolutionPage({
           </Button>
         </div>
       </section>
+
+      {/* Related guides */}
+      {relatedPosts.length > 0 && (
+        <SectionWrapper className="py-16 px-4 sm:px-6 bg-[#0a1520]">
+          <div className="max-w-7xl mx-auto">
+            <h3 className="text-lg font-semibold text-[var(--text)] mb-6">Related guides</h3>
+            <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+              {relatedPosts.map((p) => (
+                <Link
+                  key={p.slug}
+                  href={`/resources/${p.slug}`}
+                  className="glass rounded-2xl p-6 border border-white/8 hover:border-[#00C9A7]/20 transition-all group"
+                >
+                  <span
+                    className="text-xs font-semibold px-2.5 py-1 rounded-full mb-3 inline-block"
+                    style={{ background: `${solution.color}12`, color: solution.color, border: `1px solid ${solution.color}25` }}
+                  >
+                    {p.category}
+                  </span>
+                  <h4 className="font-semibold text-[var(--text)] text-sm leading-snug group-hover:text-[#00C9A7] transition-colors">
+                    {p.title}
+                  </h4>
+                  <p className="text-xs text-[var(--text-muted)] mt-2 line-clamp-2">{p.excerpt}</p>
+                </Link>
+              ))}
+            </div>
+          </div>
+        </SectionWrapper>
+      )}
 
       {/* Other solutions */}
       <SectionWrapper className="py-16 px-4 sm:px-6">
