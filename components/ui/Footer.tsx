@@ -56,7 +56,7 @@ export function Footer() {
               </a>
               <p className="flex items-center gap-2.5">
                 <MapPin className="w-4 h-4 shrink-0" strokeWidth={1.5} />
-                Austin, TX — Serving Central Texas
+                Austin, TX — Serving Businesses Nationwide
               </p>
             </div>
           </div>
@@ -108,7 +108,7 @@ export function Footer() {
         {/* Bottom bar */}
         <div className="mt-12 pt-8 border-t border-[var(--border)] flex flex-col sm:flex-row justify-between items-center gap-4">
           <p className="text-xs text-[var(--text-muted)]">
-            &copy; {new Date().getFullYear()} ConnectEx Solutions. All rights reserved. Austin, TX.
+            &copy; {new Date().getFullYear()} Connectex Solutions. All rights reserved. Austin, TX.
           </p>
           <div className="flex gap-4 text-xs text-[var(--text-muted)]">
             <Link href="/privacy" className="hover:text-[var(--text)] transition-colors">Privacy Policy</Link>

@@ -42,9 +42,9 @@ Here's the key distinction:
 
 A technology advisor earns when you adopt the right vendor and stays happy as a customer. Their incentive is alignment with yours.
 
-## What ConnectEx Does Differently
+## What Connectex Does Differently
 
-ConnectEx Solutions sources IT, cybersecurity, cloud, and communication solutions from over 600 vetted providers through the AppDirect ecosystem.
+Connectex Solutions sources IT, cybersecurity, cloud, and communication solutions from over 600 vetted providers through the AppDirect ecosystem.
 
 When you come to us with a technology need, we don't pitch you our own product. We run an assessment, identify your requirements, and source the best-fit solution from the entire market — then coordinate the implementation.
 
@@ -52,12 +52,12 @@ Think of it as having a personal technology buyer with 20+ years of industry rel
 
 ## Why This Matters for Austin SMBs
 
-Central Texas has no shortage of IT companies. Most of them:
+The market has no shortage of IT companies. Most of them:
 - Sell managed IT services and make money when you renew
 - Have preferred vendor relationships that narrow your choices
 - Don't have the carrier-level relationships to get you competitive pricing
 
-The businesses that get the best technology outcomes are the ones that separate the *advice* from the *delivery*. ConnectEx provides the advice. The best provider in the market provides the delivery.
+The businesses that get the best technology outcomes are the ones that separate the *advice* from the *delivery*. Connectex provides the advice. The best provider in the market provides the delivery.
 
 ## The Three Questions to Ask Your Current IT Vendor
 
@@ -86,7 +86,7 @@ We start every engagement with a free domain and technology assessment — no sa
 
 Ask any Austin MSP for pricing and you'll hear "it depends." That's not always evasion — IT support costs genuinely vary based on your industry, user count, and complexity. But the lack of transparency leaves most business owners negotiating blind.
 
-Here are real numbers from the current Central Texas market.
+Here are real numbers from the current Austin market (representative of what SMBs pay nationwide).
 
 ## Managed IT Pricing in Austin: The Ranges
 
@@ -114,7 +114,7 @@ A 15-person company with standard office infrastructure (Microsoft 365, basic ne
 
 Most businesses at this size that switch from reactive "break-fix" IT to managed IT see the managed service pay for itself within 90 days through prevented downtime and eliminated emergency call costs.
 
-## How ConnectEx Sources IT Differently
+## How Connectex Sources IT Differently
 
 We don't charge you a markup on managed IT services. We source the right provider for your needs from our vetted network and earn a commission directly from the provider — meaning your cost is the same (or less) than going direct, but you get an advisor who monitors the relationship on your behalf.
 
@@ -150,7 +150,7 @@ The most common misconception among Austin small business owners: "We're too sma
 
 The reality: small businesses are *preferred* targets because they have valuable data and rarely have dedicated security staff.
 
-This checklist covers the minimum viable security posture every Central Texas SMB should have in 2026.
+This checklist covers the minimum viable security posture every SMB should have in 2026.
 
 ## Email Security (The #1 Entry Point)
 
@@ -209,7 +209,7 @@ Technology controls only work if your team knows how to use them.
 
 ## Find Out Where You Stand — Free
 
-ConnectEx runs a free domain and email security assessment that shows you exactly which items on this list you're failing — in under 24 hours, with no obligation.
+Connectex runs a free domain and email security assessment that shows you exactly which items on this list you're failing — in under 24 hours, with no obligation.
 
 [Get your free vulnerability scan →](/contact)
     `,
@@ -256,9 +256,9 @@ A technology advisor sources solutions from the broader market on your behalf, e
 
 Most growing SMBs benefit from a combination: a technology advisor to source and oversee, and an MSP to execute.
 
-## Why ConnectEx Is Different
+## Why Connectex Is Different
 
-ConnectEx is a technology advisor with carrier-level relationships. That means:
+Connectex is a technology advisor with carrier-level relationships. That means:
 
 - Access to 600+ providers across IT, cybersecurity, cloud, and communications
 - No technical labor to sell, so no reason to recommend complex solutions
@@ -272,7 +272,7 @@ ConnectEx is a technology advisor with carrier-level relationships. That means:
     slug: 'cybersecurity-threats-austin-smbs-2026',
     title: '7 Cybersecurity Threats Every Austin Small Business Should Know in 2026',
     excerpt:
-      'AI has made phishing harder to detect, ransomware more targeted, and small businesses easier to find. Here\'s what\'s hitting Central Texas businesses right now.',
+      'AI has made phishing harder to detect, ransomware more targeted, and small businesses easier to find. Here\'s what\'s hitting SMBs right now.',
     category: 'Cybersecurity',
     readTime: '7 min',
     publishedAt: '2026-03-05',

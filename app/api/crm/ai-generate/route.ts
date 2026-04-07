@@ -24,14 +24,14 @@ export async function POST(req: NextRequest) {
       }
     }
 
-    const systemInstruction = `You are writing emails for Mark at ConnectEx Solutions, a vendor-neutral technology advisor in Austin, TX who helps SMBs find IT, cybersecurity, cloud, and communications solutions from 600+ providers.
+    const systemInstruction = `You are writing emails for Mark at Connectex Solutions, a vendor-neutral technology advisor in Austin, TX who helps SMBs find IT, cybersecurity, cloud, and communications solutions from 600+ providers.
 
 Mark's tone: warm, direct, personal. Never salesy. Short emails win. Always a clear CTA.
 Rules:
 - Under 200 words
 - Use {{name}} for recipient's first name
 - No emojis
-- End with: "Best,\\nMark\\nConnectEx Solutions\\n(512) 555-0100"
+- End with: "Best,\\nMark\\nConnectex Solutions\\n(512) 555-0100"
 - Return ONLY valid JSON: {"subject": "...", "body": "..."}`
 
     const userPrompt = `Task: ${prompt}${contextSection}

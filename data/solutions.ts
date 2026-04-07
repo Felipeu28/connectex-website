@@ -21,9 +21,9 @@ export const solutions: Solution[] = [
     shortTitle: 'Managed IT',
     tagline: 'Your outsourced IT department — without the overhead.',
     description:
-      'We source and manage best-in-class managed IT providers for Central Texas SMBs. Proactive monitoring, helpdesk support, and strategic IT planning — all from one advisor who shops the entire market on your behalf.',
+      'We source and manage best-in-class managed IT providers for SMBs nationwide. Proactive monitoring, helpdesk support, and strategic IT planning — all from one advisor who shops the entire market on your behalf.',
     metaDescription:
-      'Managed IT services for Austin TX small business. ConnectEx sources the right IT provider from 600+ vendors — proactive monitoring, helpdesk, and IT strategy.',
+      'Managed IT services for Austin TX small business. Connectex sources the right IT provider from 600+ vendors — proactive monitoring, helpdesk, and IT strategy.',
     icon: 'Monitor',
     color: '#00C9A7',
     features: [
@@ -51,14 +51,14 @@ export const solutions: Solution[] = [
       },
       {
         heading: 'Austin-local, enterprise-scale access',
-        body: 'You get a local advisor who knows Central Texas business culture, backed by carrier-grade infrastructure partnerships.',
+        body: 'You get a local Austin-based advisor backed by carrier-grade infrastructure partnerships across the entire country.',
       },
     ],
     faqs: [
       {
         question: 'How much does managed IT cost for a small business in Austin?',
         answer:
-          'Managed IT services in Austin typically run $75–$150 per user per month depending on service level. ConnectEx sources options across that entire range and matches you to the provider that fits your actual needs and budget — at no extra cost to you.',
+          'Managed IT services in Austin typically run $75–$150 per user per month depending on service level. Connectex sources options across that entire range and matches you to the provider that fits your actual needs and budget — at no extra cost to you.',
       },
       {
         question: 'What is the difference between managed IT and break/fix IT support?',
@@ -68,7 +68,7 @@ export const solutions: Solution[] = [
       {
         question: 'How long does it take to onboard a managed IT provider?',
         answer:
-          'Most transitions take 2–4 weeks. ConnectEx handles the vendor selection, contract negotiation, and onboarding coordination so your team experiences minimal disruption.',
+          'Most transitions take 2–4 weeks. Connectex handles the vendor selection, contract negotiation, and onboarding coordination so your team experiences minimal disruption.',
       },
       {
         question: 'Can I keep my existing software and tools?',
@@ -80,13 +80,13 @@ export const solutions: Solution[] = [
   },
   {
     slug: 'cybersecurity',
-    title: 'Cybersecurity Solutions for Central Texas SMBs',
+    title: 'Cybersecurity Solutions for Small Business',
     shortTitle: 'Cybersecurity',
     tagline: 'See what hackers see — before they do.',
     description:
       'We run a free domain and email security assessment to show you exactly where your vulnerabilities are. Then we source the right cybersecurity solution from our vetted network — from email security to endpoint protection to compliance.',
     metaDescription:
-      'Cybersecurity services for Austin TX small business. Free domain vulnerability scan. ConnectEx sources email security, endpoint protection, and compliance solutions.',
+      'Cybersecurity services for Austin TX small business. Free domain vulnerability scan. Connectex sources email security, endpoint protection, and compliance solutions.',
     icon: 'Shield',
     color: '#FF6B6B',
     features: [
@@ -147,9 +147,9 @@ export const solutions: Solution[] = [
     shortTitle: 'Cloud & Collaboration',
     tagline: 'Work from anywhere — without the IT headache.',
     description:
-      'We source and implement cloud infrastructure, Microsoft 365, Google Workspace, cloud storage, and collaboration tools for Central Texas SMBs. One advisor, 600+ providers, zero integration headaches.',
+      'We source and implement cloud infrastructure, Microsoft 365, Google Workspace, cloud storage, and collaboration tools for SMBs nationwide. One advisor, 600+ providers, zero integration headaches.',
     metaDescription:
-      'Cloud solutions for Austin TX small business. Microsoft 365, Google Workspace, cloud migration, and collaboration tools sourced by ConnectEx — vendor-neutral advisor.',
+      'Cloud solutions for Austin TX small business. Microsoft 365, Google Workspace, cloud migration, and collaboration tools sourced by Connectex — vendor-neutral advisor.',
     icon: 'Cloud',
     color: '#60A5FA',
     features: [
@@ -177,14 +177,14 @@ export const solutions: Solution[] = [
       },
       {
         heading: 'Single vendor relationship',
-        body: 'Microsoft, Google, cloud backup, and remote access — all coordinated through ConnectEx. One call resolves issues across your entire cloud stack.',
+        body: 'Microsoft, Google, cloud backup, and remote access — all coordinated through Connectex. One call resolves issues across your entire cloud stack.',
       },
     ],
     faqs: [
       {
         question: 'Is Microsoft 365 or Google Workspace better for small business?',
         answer:
-          'It depends on your workflow. Microsoft 365 is better if your team uses Word/Excel heavily or integrates with Windows environments. Google Workspace is better for collaboration-first teams that live in the browser. ConnectEx assesses your workflow before recommending either.',
+          'It depends on your workflow. Microsoft 365 is better if your team uses Word/Excel heavily or integrates with Windows environments. Google Workspace is better for collaboration-first teams that live in the browser. Connectex assesses your workflow before recommending either.',
       },
       {
         question: 'How long does a cloud migration take?',
@@ -210,9 +210,9 @@ export const solutions: Solution[] = [
     shortTitle: 'Communications',
     tagline: 'Replace your old phone system with something that actually works.',
     description:
-      'We source VoIP, UCaaS, and business communication systems for Central Texas SMBs. Cut your phone bills, unify voice/video/messaging, and never get locked into a single carrier again.',
+      'We source VoIP, UCaaS, and business communication systems for SMBs nationwide. Cut your phone bills, unify voice/video/messaging, and never get locked into a single carrier again.',
     metaDescription:
-      'Business phone systems and UCaaS solutions for Austin TX SMBs. ConnectEx sources VoIP and unified communications from leading carriers — vendor-neutral advisor.',
+      'Business phone systems and UCaaS solutions for Austin TX SMBs. Connectex sources VoIP and unified communications from leading carriers — vendor-neutral advisor.',
     icon: 'Phone',
     color: '#A78BFA',
     features: [
@@ -240,7 +240,7 @@ export const solutions: Solution[] = [
       },
       {
         heading: 'One MDA, all your vendors',
-        body: 'Sign one Master Services Agreement through ConnectEx and access the entire carrier ecosystem. One relationship replaces five vendor calls.',
+        body: 'Sign one Master Services Agreement through Connectex and access the entire carrier ecosystem. One relationship replaces five vendor calls.',
       },
     ],
     faqs: [
@@ -275,7 +275,7 @@ export const solutions: Solution[] = [
     description:
       'We source AI-powered tools and automation platforms that give Austin SMBs enterprise-grade efficiency. From AI chatbots to workflow automation to predictive analytics — sourced and implemented without the enterprise price tag.',
     metaDescription:
-      'AI and automation solutions for Austin TX small business. ConnectEx sources AI tools and workflow automation from 600+ providers — no vendor lock-in.',
+      'AI and automation solutions for Austin TX small business. Connectex sources AI tools and workflow automation from 600+ providers — no vendor lock-in.',
     icon: 'Cpu',
     color: '#F59E0B',
     features: [
@@ -315,7 +315,7 @@ export const solutions: Solution[] = [
       {
         question: 'How much do AI tools cost for small business?',
         answer:
-          'AI tools range from $50/month (AI writing and customer service tools) to $500+/month (enterprise workflow automation). The key is matching the tool cost to the time/labor cost it replaces. ConnectEx only recommends tools with a clear payback period under 6 months.',
+          'AI tools range from $50/month (AI writing and customer service tools) to $500+/month (enterprise workflow automation). The key is matching the tool cost to the time/labor cost it replaces. Connectex only recommends tools with a clear payback period under 6 months.',
       },
       {
         question: 'Will AI replace our employees?',

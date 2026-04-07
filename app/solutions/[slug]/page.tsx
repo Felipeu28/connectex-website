@@ -24,7 +24,7 @@ export async function generateMetadata({
   const url = `https://connectex.net/solutions/${solution.slug}`
 
   return {
-    title: `${solution.title} | ConnectEx Solutions`,
+    title: `${solution.title} | Connectex Solutions`,
     description: solution.metaDescription,
     alternates: { canonical: url },
     openGraph: {
@@ -32,7 +32,7 @@ export async function generateMetadata({
       description: solution.metaDescription,
       url,
       type: 'article',
-      siteName: 'ConnectEx Solutions',
+      siteName: 'Connectex Solutions',
       images: [
         {
           url: `/solutions/${solution.slug}/opengraph-image`,
@@ -188,7 +188,7 @@ export default async function SolutionPage({
       <SectionWrapper className="py-20 px-4 sm:px-6 bg-[#0a1520]">
         <div className="max-w-7xl mx-auto">
           <h2 className="text-2xl sm:text-3xl font-bold text-[var(--text)] mb-10 text-center">
-            Why ConnectEx vs. a single vendor
+            Why Connectex vs. a single vendor
           </h2>
           <div className="grid md:grid-cols-3 gap-6">
             {solution.differentiators.map((d, i) => (

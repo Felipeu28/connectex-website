@@ -1,4 +1,4 @@
--- Ticketing system tables for ConnectEx client support portal
+-- Ticketing system tables for Connectex client support portal
 
 create table tickets (
   id uuid primary key default gen_random_uuid(),

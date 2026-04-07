@@ -22,7 +22,7 @@ export async function generateMetadata({
   const url = `https://connectex.net/resources/${post.slug}`
 
   return {
-    title: `${post.title} | ConnectEx Solutions`,
+    title: `${post.title} | Connectex Solutions`,
     description: post.excerpt,
     alternates: { canonical: url },
     openGraph: {
@@ -30,7 +30,7 @@ export async function generateMetadata({
       description: post.excerpt,
       url,
       type: 'article',
-      siteName: 'ConnectEx Solutions',
+      siteName: 'Connectex Solutions',
       images: [
         {
           url: `/resources/${post.slug}/opengraph-image`,
@@ -116,7 +116,7 @@ export default async function PostPage({
             </div>
             <div>
               <p className="text-sm font-semibold text-white">Mark</p>
-              <p className="text-xs text-[var(--text-muted)]">ConnectEx Solutions · Austin, TX</p>
+              <p className="text-xs text-[var(--text-muted)]">Connectex Solutions · Austin, TX</p>
             </div>
           </div>
         </div>

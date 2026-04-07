@@ -9,7 +9,7 @@ import { generateMetadata as genMeta } from '@/lib/seo'
 export const metadata = genMeta({
   title: 'Technology Solutions for Austin SMBs',
   description:
-    'ConnectEx sources managed IT, cybersecurity, cloud, communications, and AI solutions for Central Texas small businesses from 600+ vetted providers.',
+    'Connectex sources managed IT, cybersecurity, cloud, communications, and AI solutions for small businesses nationwide from 600+ vetted providers.',
   path: '/solutions',
 })
 

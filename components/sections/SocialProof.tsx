@@ -13,7 +13,7 @@ import {
 const testimonials = [
   {
     quote:
-      "Before ConnectEx, we were managing five different vendors for IT, phones, and security. Now I make one call. Mark found us solutions we didn't even know existed and saved us over $800 a month.",
+      "Before Connectex, we were managing five different vendors for IT, phones, and security. Now I make one call. Mark found us solutions we didn't even know existed and saved us over $800 a month.",
     name: '[Client Name]',
     title: 'Owner',
     company: '[Austin Business]',
@@ -25,13 +25,13 @@ const testimonials = [
       "Mark ran a free scan on our domain and found three critical vulnerabilities our IT company had never mentioned. He connected us with a cybersecurity vendor that fixed everything in two weeks. Game changer.",
     name: '[Client Name]',
     title: 'CEO',
-    company: '[Central Texas Company]',
+    company: '[US Business]',
     initials: 'CT',
     color: '#60A5FA',
   },
   {
     quote:
-      "We were overpaying for Microsoft 365 licenses and didn't even know it. ConnectEx audited our setup, rightsized our plan, and saved us $400 a month. That's real money for a small business.",
+      "We were overpaying for Microsoft 365 licenses and didn't even know it. Connectex audited our setup, rightsized our plan, and saved us $400 a month. That's real money for a small business.",
     name: '[Client Name]',
     title: 'Operations Manager',
     company: '[Austin SMB]',

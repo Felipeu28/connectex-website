@@ -17,7 +17,7 @@ export async function POST(req: NextRequest) {
     }
 
     const body = `
-New ConnectEx Lead
+New Connectex Lead
 
 Name: ${name}
 Company: ${company}
@@ -44,7 +44,7 @@ Sent from connectex.net contact form
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          from: 'ConnectEx Website <noreply@connectex.net>',
+          from: 'Connectex Website <noreply@connectex.net>',
           to: ['mark@connectex.net'],
           subject: `New lead: ${name} — ${company} (${domain})`,
           text: body,

@@ -19,7 +19,7 @@ function formatDate(dateStr: string): string {
 
 function MessageBubble({ msg }: { msg: TicketMessage }) {
   const isAdmin = msg.sender_type === 'admin'
-  const isAI = msg.sender_name === 'ConnectEx AI Support'
+  const isAI = msg.sender_name === 'Connectex AI Support'
 
   const bubbleColor = isAI
     ? 'bg-[#8B2BE2]/10 border border-[#8B2BE2]/20'

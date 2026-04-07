@@ -68,7 +68,7 @@ export function TechWheel() {
         viewport={{ once: true, amount: 0.3 }}
         transition={{ duration: 0.7, ease: [0.25, 0.4, 0.25, 1] }}
       >
-        <svg width={400} height={400} viewBox="0 0 400 400" role="img" aria-label="ConnectEx technology solutions wheel">
+        <svg width={400} height={400} viewBox="0 0 400 400" role="img" aria-label="Connectex technology solutions wheel">
           <defs>
             {segments.map((seg) => (
               <radialGradient key={seg.id} id={`grad-${seg.id}`} cx="50%" cy="50%" r="50%">

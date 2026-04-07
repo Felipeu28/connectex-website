@@ -1,6 +1,6 @@
-const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL ?? 'https://connectex-website.vercel.app'
+const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://connectex-website.vercel.app').trim()
 const RESEND_KEY = process.env.RESEND_API_KEY
-const FROM = 'ConnectEx Support <support@connectex.net>'
+const FROM = 'Connectex Support <support@connectex.net>'
 
 interface TicketEmailData {
   clientName: string
@@ -23,13 +23,13 @@ function baseTemplate(content: string) {
   return `
     <div style="font-family:system-ui,sans-serif;max-width:600px;margin:0 auto;background:#0F1B2D;color:#E8EAED;border-radius:12px;overflow:hidden;">
       <div style="background:linear-gradient(135deg,#8B2BE2,#4B6CF7,#00C9A7);padding:20px 24px;">
-        <p style="margin:0;font-size:13px;color:rgba(255,255,255,0.7);text-transform:uppercase;letter-spacing:0.1em;">ConnectEx Solutions</p>
+        <p style="margin:0;font-size:13px;color:rgba(255,255,255,0.7);text-transform:uppercase;letter-spacing:0.1em;">Connectex Solutions</p>
         <h1 style="margin:4px 0 0;font-size:20px;color:#fff;">Support Ticket Update</h1>
       </div>
       <div style="padding:24px;">
         ${content}
         <p style="margin:24px 0 0;font-size:12px;color:#64748B;">
-          You are receiving this because you submitted a support ticket with ConnectEx Solutions.
+          You are receiving this because you submitted a support ticket with Connectex Solutions.
           Reply directly in your ticket portal — do not reply to this email.
         </p>
       </div>
@@ -44,7 +44,7 @@ export async function notifyClientNewReply(
   senderName: string
 ) {
   const ticketUrl = `${SITE_URL}/ticketing/${ticket.token}`
-  const isAI = senderName === 'ConnectEx AI Support'
+  const isAI = senderName === 'Connectex AI Support'
 
   const content = `
     <p style="margin:0 0 12px;">Hi ${ticket.clientName},</p>

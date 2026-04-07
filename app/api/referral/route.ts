@@ -20,7 +20,7 @@ export async function POST(req: NextRequest) {
     }
 
     const body = `
-New ConnectEx Referral
+New Connectex Referral
 
 Referred by: ${referrer_name}${referrer_email ? ` <${referrer_email}>` : ''}
 
@@ -45,7 +45,7 @@ Sent from connectex.net/partners
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          from: 'ConnectEx Website <noreply@connectex.net>',
+          from: 'Connectex Website <noreply@connectex.net>',
           to: ['mark@connectex.net'],
           subject: `New referral: ${business_name} — ${service_needed}`,
           text: body,

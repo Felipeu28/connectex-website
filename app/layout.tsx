@@ -13,8 +13,8 @@ const inter = Inter({
 export const metadata: Metadata = {
   metadataBase: new URL('https://connectex.net'),
   title: {
-    default: "ConnectEx Solutions | Austin's Vendor-Neutral Technology Advisor",
-    template: '%s | ConnectEx Solutions',
+    default: "Connectex Solutions | Austin's Vendor-Neutral Technology Advisor",
+    template: '%s | Connectex Solutions',
   },
   description:
     "Austin's vendor-neutral technology advisor for small business. We source IT, cybersecurity, cloud, and communications from 600+ providers — no vendor bias, no wasted budget.",
@@ -22,11 +22,11 @@ export const metadata: Metadata = {
     'technology advisor Austin Texas',
     'managed IT services Austin TX',
     'cybersecurity Austin small business',
-    'IT consulting Central Texas',
+    'IT consulting small business nationwide',
     'vendor-neutral technology advisor',
     'business technology solutions Austin',
   ],
-  authors: [{ name: 'ConnectEx Solutions', url: 'https://connectex.net' }],
+  authors: [{ name: 'Connectex Solutions', url: 'https://connectex.net' }],
   robots: {
     index: true,
     follow: true,
@@ -36,7 +36,7 @@ export const metadata: Metadata = {
     type: 'website',
     locale: 'en_US',
     url: 'https://connectex.net',
-    siteName: 'ConnectEx Solutions',
+    siteName: 'Connectex Solutions',
   },
 }
 

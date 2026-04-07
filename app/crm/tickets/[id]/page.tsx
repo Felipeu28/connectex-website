@@ -314,17 +314,17 @@ export default function CRMTicketDetailPage({ params }: { params: Promise<{ id: 
                   className={clsx(
                     'p-3 rounded-lg max-w-[85%]',
                     m.sender_type === 'admin'
-                      ? m.sender_name === 'ConnectEx AI Support'
+                      ? m.sender_name === 'Connectex AI Support'
                         ? 'ml-auto bg-[#8B2BE2]/10 border border-[#8B2BE2]/20'
                         : 'ml-auto bg-[#00C9A7]/10 border border-[#00C9A7]/20'
                       : 'bg-white/[0.03] border border-white/5'
                   )}
                 >
                   <div className="flex items-center gap-2 mb-1">
-                    {m.sender_name === 'ConnectEx AI Support' && <Bot className="w-3 h-3 text-[#C084FC]" />}
+                    {m.sender_name === 'Connectex AI Support' && <Bot className="w-3 h-3 text-[#C084FC]" />}
                     <span className={clsx(
                       'text-xs font-medium',
-                      m.sender_name === 'ConnectEx AI Support' ? 'text-[#C084FC]' :
+                      m.sender_name === 'Connectex AI Support' ? 'text-[#C084FC]' :
                       m.sender_type === 'admin' ? 'text-[#00C9A7]' : 'text-white'
                     )}>
                       {m.sender_name}

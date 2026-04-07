@@ -19,7 +19,7 @@ export async function POST(req: NextRequest) {
     }
 
     const resend = new Resend(resendApiKey)
-    const fromEmail = process.env.RESEND_FROM_EMAIL || 'Mark at ConnectEx <mark@connectex.net>'
+    const fromEmail = process.env.RESEND_FROM_EMAIL || 'Mark at Connectex <mark@connectex.net>'
     const supabase = await createSupabaseServer()
 
     // Fetch the campaign
@@ -50,10 +50,11 @@ export async function POST(req: NextRequest) {
       .not('email', 'is', null)
 
     if (filter && filter !== 'all') {
-      if (filter.stage) {
+      if (filter.ids && filter.ids.length > 0) {
+        query = query.in('id', filter.ids)
+      } else if (filter.stage) {
         query = query.eq('stage', filter.stage)
-      }
-      if (filter.tags && filter.tags.length > 0) {
+      } else if (filter.tags && filter.tags.length > 0) {
         query = query.overlaps('tags', filter.tags)
       }
     }

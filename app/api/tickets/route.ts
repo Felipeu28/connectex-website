@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase'
 import { createClient as createAdminClient } from '@supabase/supabase-js'
 import { notifyClientTicketCreated } from '@/lib/ticket-notifications'
+import { runTriage } from '@/lib/ticket-triage'
 
 const PRIORITIES = ['low', 'medium', 'high', 'urgent'] as const
 
@@ -85,13 +86,8 @@ export async function POST(req: NextRequest) {
       token: ticket.token,
     }).catch(() => {})
 
-    // Fire-and-forget AI triage (don't block the response)
-    const baseUrl = process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000'
-    fetch(`${baseUrl}/api/tickets/triage`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ ticket_id: ticket.id }),
-    }).catch((err) => console.error('Triage dispatch failed:', err))
+    // Fire-and-forget AI triage (call directly — no HTTP round-trip needed)
+    runTriage(ticket.id).catch((err) => console.error('Triage failed:', err))
 
     return NextResponse.json({ token: ticket.token }, { status: 201 })
   } catch (err) {

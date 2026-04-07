@@ -15,7 +15,7 @@ export async function POST(req: NextRequest) {
 
       const result = await callGeminiJSON<{ name: string; subject: string; body: string }>({
         model: GEMINI_PRO,
-        systemInstruction: `You are writing sales emails for ConnectEx Solutions, a vendor-neutral technology advisor in Austin, TX. The sender is Mark, who helps SMBs source IT, cybersecurity, cloud, and communications solutions from 600+ providers. Write professional, warm, and concise emails. Return ONLY valid JSON.`,
+        systemInstruction: `You are writing sales emails for Connectex Solutions, a vendor-neutral technology advisor in Austin, TX. The sender is Mark, who helps SMBs source IT, cybersecurity, cloud, and communications solutions from 600+ providers. Write professional, warm, and concise emails. Return ONLY valid JSON.`,
         parts: [{ text: `Write a sales email based on this brief: ${prompt}
 
 Rules:

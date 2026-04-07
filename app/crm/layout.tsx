@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
-  title: 'CRM | ConnectEx Solutions',
+  title: 'CRM | Connectex Solutions',
   robots: { index: false, follow: false },
 }
 

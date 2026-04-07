@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react'
 import { CRMShell } from '@/components/crm/CRMShell'
 import { createSupabaseBrowser } from '@/lib/supabase-browser'
-import { Plus, Play, Pause, Archive, ChevronDown, ChevronUp, Trash2, X, Users, Mail, Sparkles, Loader2, GripVertical } from 'lucide-react'
+import { Plus, Play, Pause, Archive, ChevronDown, ChevronUp, Trash2, X, Users, Mail, Sparkles, Loader2, Pencil, UserPlus, CheckCircle } from 'lucide-react'
 import { clsx } from 'clsx'
 
 interface SequenceStep {
@@ -40,6 +40,15 @@ export default function SequencesPage() {
   const [saving, setSaving] = useState(false)
   const [generating, setGenerating] = useState<number | null>(null)
   const [aiPrompt, setAiPrompt] = useState('')
+
+  // Enroll contacts state
+  const [enrollSeq, setEnrollSeq] = useState<Sequence | null>(null)
+  const [enrollSearch, setEnrollSearch] = useState('')
+  const [enrollResults, setEnrollResults] = useState<{ id: string; name: string; email: string | null; company: string | null }[]>([])
+  const [enrollSelected, setEnrollSelected] = useState<Map<string, { name: string; email: string | null }>>(new Map())
+  const [enrollSearching, setEnrollSearching] = useState(false)
+  const [enrolling, setEnrolling] = useState(false)
+  const [enrollDone, setEnrollDone] = useState<{ enrolled: number; skipped: number } | null>(null)
 
   useEffect(() => { load() }, [])
 
@@ -159,6 +168,92 @@ Write a short, personal email (not salesy). Return JSON: {"subject": "...", "bod
     load()
   }
 
+  // Enroll contacts search (debounced)
+  useEffect(() => {
+    if (!enrollSearch.trim()) {
+      setEnrollResults([])
+      return
+    }
+    const timer = setTimeout(async () => {
+      setEnrollSearching(true)
+      const supabase = createSupabaseBrowser()
+      const { data } = await supabase
+        .from('crm_contacts')
+        .select('id, name, email, company')
+        .not('email', 'is', null)
+        .or(`name.ilike.%${enrollSearch}%,email.ilike.%${enrollSearch}%,company.ilike.%${enrollSearch}%`)
+        .limit(10)
+      setEnrollResults(data ?? [])
+      setEnrollSearching(false)
+    }, 250)
+    return () => clearTimeout(timer)
+  }, [enrollSearch])
+
+  function toggleEnrollContact(c: { id: string; name: string; email: string | null }) {
+    setEnrollSelected((prev) => {
+      const next = new Map(prev)
+      if (next.has(c.id)) {
+        next.delete(c.id)
+      } else {
+        next.set(c.id, { name: c.name, email: c.email })
+      }
+      return next
+    })
+  }
+
+  async function handleEnroll() {
+    if (!enrollSeq || enrollSelected.size === 0 || enrolling) return
+    setEnrolling(true)
+
+    const supabase = createSupabaseBrowser()
+    // Get first step's delay_days to compute next_send_at
+    const { data: firstStep } = await supabase
+      .from('crm_sequence_steps')
+      .select('delay_days')
+      .eq('sequence_id', enrollSeq.id)
+      .eq('step_number', 1)
+      .single()
+
+    const delayDays = firstStep?.delay_days ?? 0
+    const nextSendAt = new Date()
+    nextSendAt.setDate(nextSendAt.getDate() + delayDays)
+
+    let enrolled = 0
+    let skipped = 0
+
+    for (const [contactId] of enrollSelected) {
+      const { error } = await supabase.from('crm_sequence_enrollments').insert({
+        sequence_id: enrollSeq.id,
+        contact_id: contactId,
+        current_step: 1,
+        status: 'active',
+        next_send_at: nextSendAt.toISOString(),
+      })
+      if (error && error.code === '23505') {
+        skipped++ // unique constraint — already enrolled
+      } else if (!error) {
+        enrolled++
+      }
+    }
+
+    setEnrollDone({ enrolled, skipped })
+    setEnrolling(false)
+    load()
+  }
+
+  function openEnrollModal(seq: Sequence) {
+    setEnrollSeq(seq)
+    setEnrollSearch('')
+    setEnrollResults([])
+    setEnrollSelected(new Map())
+    setEnrollDone(null)
+  }
+
+  function closeEnrollModal() {
+    setEnrollSeq(null)
+    setEnrollDone(null)
+  }
+
   return (
     <CRMShell>
       <div className="space-y-5">
@@ -236,7 +331,14 @@ Write a short, personal email (not salesy). Return JSON: {"subject": "...", "bod
                         className="p-1.5 rounded-lg hover:bg-white/10 text-[var(--color-text-muted)] hover:text-white transition-colors"
                         title="Edit"
                       >
-                        <GripVertical className="w-4 h-4" />
+                        <Pencil className="w-4 h-4" />
+                      </button>
+                      <button
+                        onClick={() => openEnrollModal(seq)}
+                        className="p-1.5 rounded-lg hover:bg-[#00C9A7]/20 text-[var(--color-text-muted)] hover:text-[#00C9A7] transition-colors"
+                        title="Enroll contacts"
+                      >
+                        <UserPlus className="w-4 h-4" />
                       </button>
                       <button
                         onClick={() => archiveSequence(seq.id)}
@@ -416,6 +518,125 @@ Write a short, personal email (not salesy). Return JSON: {"subject": "...", "bod
                 {saving ? 'Saving...' : editSeq ? 'Update Sequence' : 'Save Sequence'}
               </button>
             </div>
+          </div>
+        </div>
+      )}
+
+      {/* Enroll Contacts Modal */}
+      {enrollSeq && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          <div className="absolute inset-0 bg-black/70 backdrop-blur-sm" onClick={!enrolling ? closeEnrollModal : undefined} />
+          <div className="relative w-full max-w-md rounded-2xl p-6 bg-[#0F1B2D]/95 backdrop-blur-xl border border-white/10 shadow-2xl shadow-black/40">
+            <div className="flex items-center justify-between mb-5">
+              <div>
+                <h2 className="text-lg font-semibold text-white flex items-center gap-2">
+                  <UserPlus className="w-5 h-5 text-[#00C9A7]" />
+                  Enroll Contacts
+                </h2>
+                <p className="text-xs text-[var(--color-text-muted)] mt-0.5">{enrollSeq.name}</p>
+              </div>
+              {!enrolling && (
+                <button onClick={closeEnrollModal} className="p-1.5 rounded-lg hover:bg-white/10 text-[var(--color-text-muted)]" aria-label="Close">
+                  <X className="w-5 h-5" />
+                </button>
+              )}
+            </div>
+
+            {!enrollDone ? (
+              <>
+                {/* Search */}
+                <div className="relative mb-3">
+                  <Mail className="absolute left-2.5 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[var(--color-text-faint)]" />
+                  <input
+                    type="text"
+                    value={enrollSearch}
+                    onChange={(e) => setEnrollSearch(e.target.value)}
+                    placeholder="Search contacts by name, email, or company..."
+                    className="w-full pl-8 pr-3 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white placeholder:text-[var(--color-text-faint)] focus:outline-none focus:ring-2 focus:ring-[#00C9A7] text-sm"
+                  />
+                  {enrollSearching && <Loader2 className="absolute right-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 animate-spin text-[var(--color-text-faint)]" />}
+                </div>
+
+                {/* Search results */}
+                {enrollResults.length > 0 && (
+                  <div className="mb-3 space-y-1 max-h-40 overflow-y-auto">
+                    {enrollResults.map((c) => (
+                      <button
+                        key={c.id}
+                        onClick={() => toggleEnrollContact(c)}
+                        className={clsx(
+                          'w-full flex items-center justify-between px-3 py-2 rounded-lg text-left text-sm transition-colors',
+                          enrollSelected.has(c.id) ? 'bg-[#00C9A7]/15 text-[#00C9A7]' : 'hover:bg-white/5 text-white'
+                        )}
+                      >
+                        <div>
+                          <span className="font-medium">{c.name}</span>
+                          {c.company && <span className="text-xs opacity-60 ml-1.5">· {c.company}</span>}
+                          <p className="text-xs opacity-50">{c.email}</p>
+                        </div>
+                        {enrollSelected.has(c.id) && <CheckCircle className="w-4 h-4 flex-shrink-0" />}
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                {/* Selected contacts */}
+                {enrollSelected.size > 0 && (
+                  <div className="mb-4 p-3 rounded-xl bg-white/[0.03] border border-white/8">
+                    <p className="text-xs text-[var(--color-text-muted)] mb-2">{enrollSelected.size} contact{enrollSelected.size !== 1 ? 's' : ''} to enroll:</p>
+                    <div className="flex flex-wrap gap-1">
+                      {[...enrollSelected.entries()].map(([id, c]) => (
+                        <span key={id} className="inline-flex items-center gap-1 text-xs bg-[#00C9A7]/15 text-[#00C9A7] px-2 py-0.5 rounded-full">
+                          {c.name}
+                          <button onClick={() => toggleEnrollContact({ id, name: c.name, email: c.email })} className="hover:text-white">
+                            <X className="w-3 h-3" />
+                          </button>
+                        </span>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                <p className="text-xs text-[var(--color-text-faint)] mb-4">
+                  Contacts will receive step 1 on the next hourly cron run. Already-enrolled contacts are skipped automatically.
+                </p>
+
+                <div className="flex items-center justify-end gap-3">
+                  <button onClick={closeEnrollModal} disabled={enrolling} className="px-4 py-2.5 text-sm font-medium text-[var(--color-text-muted)] hover:text-white rounded-xl hover:bg-white/5 transition-colors disabled:opacity-50">
+                    Cancel
+                  </button>
+                  <button
+                    onClick={handleEnroll}
+                    disabled={enrolling || enrollSelected.size === 0}
+                    className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-semibold bg-[#00C9A7] hover:bg-[#00b394] text-[#0F1B2D] rounded-xl transition-colors disabled:opacity-50"
+                  >
+                    {enrolling ? (
+                      <><Loader2 className="w-4 h-4 animate-spin" />Enrolling...</>
+                    ) : (
+                      <><UserPlus className="w-4 h-4" />Enroll {enrollSelected.size} Contact{enrollSelected.size !== 1 ? 's' : ''}</>
+                    )}
+                  </button>
+                </div>
+              </>
+            ) : (
+              <div className="space-y-4">
+                <div className="flex items-start gap-3 p-4 rounded-xl bg-[#00C9A7]/10 border border-[#00C9A7]/20">
+                  <CheckCircle className="w-5 h-5 text-[#00C9A7] mt-0.5 shrink-0" />
+                  <div>
+                    <p className="text-sm font-medium text-white">Enrollment complete</p>
+                    <p className="text-xs text-[var(--color-text-muted)] mt-1">
+                      {enrollDone.enrolled} enrolled
+                      {enrollDone.skipped > 0 && `, ${enrollDone.skipped} already in sequence`}
+                    </p>
+                  </div>
+                </div>
+                <div className="flex justify-end">
+                  <button onClick={closeEnrollModal} className="px-5 py-2.5 text-sm font-semibold bg-[#00C9A7] hover:bg-[#00b394] text-[#0F1B2D] rounded-xl transition-colors">
+                    Done
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
         </div>
       )}

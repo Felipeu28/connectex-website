@@ -4,9 +4,9 @@ import { breadcrumbSchema } from '@/lib/schema'
 import { generateMetadata as genMeta } from '@/lib/seo'
 
 export const metadata = genMeta({
-  title: 'Partners & Referrals — ConnectEx Solutions',
+  title: 'Partners & Referrals — Connectex Solutions',
   description:
-    'Refer a business to ConnectEx or become a preferred local technology partner in Austin TX. Direct referrals, direct payment — no middleman.',
+    'Refer a business to Connectex or become a preferred local technology partner in Austin TX. Direct referrals, direct payment — no middleman.',
   path: '/partners',
 })
 
@@ -57,7 +57,7 @@ export default function PartnersPage() {
               {[
                 ['Direct connection', 'Mark personally follows up on every referral within 24 hours'],
                 ['No sales pressure', 'A conversation, not a pitch. We figure out what you actually need first'],
-                ['Local knowledge', '20+ years in Central Texas business — we know the market'],
+                ['Local knowledge', '20+ years in the industry — we know the market across every region'],
               ].map(([title, desc]) => (
                 <div key={title} className="flex items-start gap-3">
                   <div className="w-6 h-6 rounded-lg bg-[#00C9A7]/15 border border-[#00C9A7]/30 flex items-center justify-center shrink-0 mt-0.5">
@@ -77,7 +77,7 @@ export default function PartnersPage() {
             <div className="glass rounded-2xl p-7 border border-white/8">
               <h3 className="font-bold text-white mb-3">Are you a local technology vendor?</h3>
               <p className="text-sm text-[var(--text-muted)] mb-4">
-                ConnectEx is building a network of preferred local partners. If you provide technology services to Austin area businesses, we&rsquo;d like to talk.
+                Connectex is building a network of preferred local partners. If you provide technology services to Austin area businesses, we&rsquo;d like to talk.
               </p>
               <a
                 href="mailto:mark@connectex.net?subject=Partner inquiry"

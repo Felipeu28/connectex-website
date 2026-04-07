@@ -4,9 +4,9 @@ import { breadcrumbSchema } from '@/lib/schema'
 import { generateMetadata as genMeta } from '@/lib/seo'
 
 export const metadata = genMeta({
-  title: 'Get Your Free Vulnerability Scan — ConnectEx Austin TX',
+  title: 'Get Your Free Vulnerability Scan — Connectex Austin TX',
   description:
-    'Find out what a hacker can see when they look at your Austin business — free domain and email security report from ConnectEx, delivered within 24 hours.',
+    'Find out what a hacker can see when they look at your Austin business — free domain and email security report from Connectex, delivered within 24 hours.',
   path: '/contact',
 })
 
