@@ -268,6 +268,69 @@ export const solutions: Solution[] = [
     stat: { value: '60%', label: 'average cost reduction when Austin SMBs switch from legacy PBX to VoIP' },
   },
   {
+    slug: 'connectivity',
+    title: 'Business Internet & Connectivity Services Austin TX',
+    shortTitle: 'Connectivity',
+    tagline: 'Fast, reliable internet — without overpaying for it.',
+    description:
+      'We source fiber, broadband, SD-WAN, and wireless backup solutions for Austin SMBs from every major carrier. Never get stuck with one provider\'s pricing or coverage gaps again.',
+    metaDescription:
+      'Business internet and connectivity services for Austin TX small business. Connectex sources fiber, broadband, and SD-WAN from Verizon, AT&T, and 600+ carriers — vendor-neutral advisor.',
+    icon: 'Globe',
+    color: '#34D399',
+    features: [
+      'Dedicated fiber internet circuits',
+      'SD-WAN network optimization',
+      'Wireless backup & automatic failover',
+      'Multi-carrier bonding',
+      'Business broadband (cable/fiber)',
+      'Carrier comparison & contract negotiation',
+    ],
+    useCases: [
+      'Businesses renewing their internet contract without comparing alternatives',
+      'Companies that need automatic failover to prevent downtime',
+      'SMBs building SD-WAN for distributed locations or remote workers',
+      'Organizations moving to the cloud and needing more bandwidth',
+    ],
+    differentiators: [
+      {
+        heading: 'We compare every carrier',
+        body: 'AT&T, Verizon, Spectrum, Comcast, Lumen, and regional providers — we run your address through all of them and show you real pricing side-by-side. No single-carrier bias.',
+      },
+      {
+        heading: '20+ years of carrier relationships',
+        body: 'Mark has deep relationships with every major carrier. That means better pricing, faster escalations, and someone who knows how contracts actually work.',
+      },
+      {
+        heading: 'Never without internet',
+        body: 'We design connectivity solutions with automatic 4G/5G failover — if your primary connection goes down, wireless backup keeps you online within 30–60 seconds.',
+      },
+    ],
+    faqs: [
+      {
+        question: 'How much does business fiber internet cost in Austin?',
+        answer:
+          'Business fiber in Austin typically runs $200–$1,500+/month depending on bandwidth (50 Mbps to 1 Gbps+) and the provider. Connectex compares every available carrier at your address and negotiates on your behalf — most businesses find 20–40% savings versus renewing direct.',
+      },
+      {
+        question: 'What is SD-WAN and does my business need it?',
+        answer:
+          'SD-WAN (Software-Defined Wide Area Network) manages traffic across multiple internet connections, prioritizing critical applications and automatically routing around outages. Most businesses with 20+ employees, remote workers, or multiple locations benefit from SD-WAN.',
+      },
+      {
+        question: 'What happens to my business when the internet goes down?',
+        answer:
+          'A wireless backup circuit (4G/5G) automatically takes over when your primary connection fails — usually within 30–60 seconds. For businesses where downtime costs revenue, this is essential infrastructure.',
+      },
+      {
+        question: 'Can you help us get out of our current internet contract early?',
+        answer:
+          'Yes. We review your contract terms and identify the most cost-effective path — whether that is waiting for the renewal window, negotiating an upgrade with better terms, or porting to a better provider.',
+      },
+    ],
+    stat: { value: '87%', label: 'of SMBs overpay on internet by renewing without comparing alternatives' },
+  },
+  {
     slug: 'ai-automation',
     title: 'AI & Automation Tools for Austin Small Business',
     shortTitle: 'AI & Automation',

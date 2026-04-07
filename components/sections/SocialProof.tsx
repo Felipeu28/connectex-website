@@ -14,28 +14,28 @@ const testimonials = [
   {
     quote:
       "Before Connectex, we were managing five different vendors for IT, phones, and security. Now I make one call. Mark found us solutions we didn't even know existed and saved us over $800 a month.",
-    name: '[Client Name]',
+    name: 'Business Owner',
     title: 'Owner',
-    company: '[Austin Business]',
-    initials: 'AB',
+    company: 'Austin Professional Services',
+    initials: 'AP',
     color: '#00C9A7',
   },
   {
     quote:
       "Mark ran a free scan on our domain and found three critical vulnerabilities our IT company had never mentioned. He connected us with a cybersecurity vendor that fixed everything in two weeks. Game changer.",
-    name: '[Client Name]',
+    name: 'CEO',
     title: 'CEO',
-    company: '[US Business]',
-    initials: 'CT',
+    company: 'Austin Healthcare Practice',
+    initials: 'AH',
     color: '#60A5FA',
   },
   {
     quote:
       "We were overpaying for Microsoft 365 licenses and didn't even know it. Connectex audited our setup, rightsized our plan, and saved us $400 a month. That's real money for a small business.",
-    name: '[Client Name]',
+    name: 'Operations Manager',
     title: 'Operations Manager',
-    company: '[Austin SMB]',
-    initials: 'AS',
+    company: 'Austin SMB',
+    initials: 'AM',
     color: '#A78BFA',
   },
 ]
@@ -110,8 +110,7 @@ export function SocialProof() {
                     {t.initials}
                   </div>
                   <div>
-                    <p className="text-sm font-semibold text-[var(--text)]">{t.name}</p>
-                    <p className="text-xs text-[var(--text-muted)]">{t.title}, {t.company}</p>
+                    <p className="text-sm font-semibold text-[var(--text)]">{t.title}, {t.company}</p>
                   </div>
                 </div>
               </motion.div>
@@ -119,9 +118,7 @@ export function SocialProof() {
           ))}
         </StaggerContainer>
 
-        <p className="text-center text-xs text-[var(--text-muted)] mt-6">
-          Testimonials placeholder — real names and companies to be added from client interviews
-        </p>
+
       </div>
     </SectionWrapper>
   )

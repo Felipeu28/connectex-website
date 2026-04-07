@@ -1,10 +1,13 @@
 import Link from 'next/link'
-import { posts } from '@/data/posts'
+import { posts, Post } from '@/data/posts'
 import { SectionWrapper } from '@/components/ui/SectionWrapper'
 import { Badge } from '@/components/ui/Badge'
 import { Button } from '@/components/ui/Button'
 import { breadcrumbSchema } from '@/lib/schema'
 import { generateMetadata as genMeta } from '@/lib/seo'
+import { createSupabaseServer } from '@/lib/supabase-server'
+
+export const revalidate = 60
 
 export const metadata = genMeta({
   title: 'Resources — Technology Guides for Austin SMBs',
@@ -13,7 +16,41 @@ export const metadata = genMeta({
   path: '/resources',
 })
 
-export default function ResourcesPage() {
+// Fetch published posts from Supabase, merge with static posts
+async function getPublishedPosts(): Promise<Post[]> {
+  try {
+    const supabase = await createSupabaseServer()
+    const { data } = await supabase
+      .from('blog_posts')
+      .select('slug, title, excerpt, category, read_time, published_at, featured')
+      .eq('status', 'published')
+      .order('published_at', { ascending: false })
+
+    if (data && data.length > 0) {
+      const supabaseSlugs = new Set(data.map(p => p.slug))
+      // Static posts not superseded by Supabase
+      const staticOnly = posts.filter(p => !supabaseSlugs.has(p.slug))
+      const supabasePosts: Post[] = data.map(p => ({
+        slug: p.slug,
+        title: p.title,
+        excerpt: p.excerpt,
+        category: p.category,
+        readTime: p.read_time,
+        publishedAt: p.published_at ? p.published_at.split('T')[0] : '',
+        featured: p.featured,
+        body: '',
+      }))
+      return [...supabasePosts, ...staticOnly]
+    }
+  } catch {
+    // Supabase not configured — use static data
+  }
+  return posts
+}
+
+export default async function ResourcesPage() {
+  const allPosts = await getPublishedPosts()
+
   return (
     <>
       <script
@@ -45,7 +82,7 @@ export default function ResourcesPage() {
       <SectionWrapper className="py-16 px-4 sm:px-6">
         <div className="max-w-7xl mx-auto">
           <h2 className="text-sm font-semibold text-[var(--text-muted)] uppercase tracking-widest mb-6">Featured</h2>
-          {posts.filter((p) => p.featured).slice(0, 1).map((post) => (
+          {allPosts.filter((p) => p.featured).slice(0, 1).map((post) => (
             <Link
               key={post.slug}
               href={`/resources/${post.slug}`}
@@ -91,7 +128,7 @@ export default function ResourcesPage() {
         <div className="max-w-7xl mx-auto">
           <h2 className="text-sm font-semibold text-[var(--text-muted)] uppercase tracking-widest mb-6">All guides</h2>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {posts.map((post) => (
+            {allPosts.map((post) => (
               <Link
                 key={post.slug}
                 href={`/resources/${post.slug}`}

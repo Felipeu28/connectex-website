@@ -1,10 +1,14 @@
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
-import { posts, getPost } from '@/data/posts'
+import { posts, getPost, Post } from '@/data/posts'
 import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
 import { breadcrumbSchema, blogPostSchema } from '@/lib/schema'
+import { createSupabaseServer } from '@/lib/supabase-server'
+
+export const revalidate = 60
+export const dynamicParams = true
 
 export async function generateStaticParams() {
   return posts.map((p) => ({ slug: p.slug }))
@@ -16,7 +20,35 @@ export async function generateMetadata({
   params: Promise<{ slug: string }>
 }): Promise<Metadata> {
   const { slug } = await params
-  const post = getPost(slug)
+  let post: Post | undefined = getPost(slug)
+
+  if (!post) {
+    try {
+      const supabase = await createSupabaseServer()
+      const { data } = await supabase
+        .from('blog_posts')
+        .select('*')
+        .eq('slug', slug)
+        .eq('status', 'published')
+        .single()
+
+      if (data) {
+        post = {
+          slug: data.slug,
+          title: data.title,
+          excerpt: data.excerpt,
+          category: data.category,
+          readTime: data.read_time,
+          publishedAt: data.published_at ? data.published_at.split('T')[0] : '',
+          featured: data.featured,
+          body: data.body,
+        }
+      }
+    } catch {
+      // Supabase not configured
+    }
+  }
+
   if (!post) return {}
 
   const url = `https://connectex.net/resources/${post.slug}`
@@ -55,10 +87,39 @@ export default async function PostPage({
   params: Promise<{ slug: string }>
 }) {
   const { slug } = await params
-  const post = getPost(slug)
-  if (!post) notFound()
+  let post: Post | undefined = getPost(slug)
 
-  const related = posts.filter((p) => p.slug !== slug && p.category === post.category).slice(0, 2)
+  if (!post) {
+    try {
+      const supabase = await createSupabaseServer()
+      const { data } = await supabase
+        .from('blog_posts')
+        .select('*')
+        .eq('slug', slug)
+        .eq('status', 'published')
+        .single()
+
+      if (data) {
+        post = {
+          slug: data.slug,
+          title: data.title,
+          excerpt: data.excerpt,
+          category: data.category,
+          readTime: data.read_time,
+          publishedAt: data.published_at ? data.published_at.split('T')[0] : '',
+          featured: data.featured,
+          body: data.body,
+        }
+      }
+    } catch {
+      // Supabase not configured
+    }
+  }
+
+  if (!post) notFound()
+  const safePost = post as Post
+
+  const related = posts.filter((p) => p.slug !== slug && p.category === safePost.category).slice(0, 2)
 
   return (
     <>
@@ -69,7 +130,7 @@ export default async function PostPage({
             breadcrumbSchema([
               { name: 'Home', url: '/' },
               { name: 'Resources', url: '/resources' },
-              { name: post.title, url: `/resources/${post.slug}` },
+              { name: safePost.title, url: `/resources/${safePost.slug}` },
             ])
           ),
         }}
@@ -79,10 +140,10 @@ export default async function PostPage({
         dangerouslySetInnerHTML={{
           __html: JSON.stringify(
             blogPostSchema({
-              title: post.title,
-              description: post.excerpt,
-              slug: post.slug,
-              datePublished: post.publishedAt,
+              title: safePost.title,
+              description: safePost.excerpt,
+              slug: safePost.slug,
+              datePublished: safePost.publishedAt,
             })
           ),
         }}
@@ -96,19 +157,19 @@ export default async function PostPage({
             <span>/</span>
             <Link href="/resources" className="hover:text-white transition-colors">Resources</Link>
             <span>/</span>
-            <span className="text-[#00C9A7]">{post.category}</span>
+            <span className="text-[#00C9A7]">{safePost.category}</span>
           </nav>
 
           <div className="flex items-center gap-3 mb-5">
-            <Badge variant="accent">{post.category}</Badge>
-            <span className="text-xs text-[var(--text-muted)]">{post.readTime} read</span>
-            <span className="text-xs text-[var(--text-muted)]">{post.publishedAt}</span>
+            <Badge variant="accent">{safePost.category}</Badge>
+            <span className="text-xs text-[var(--text-muted)]">{safePost.readTime} read</span>
+            <span className="text-xs text-[var(--text-muted)]">{safePost.publishedAt}</span>
           </div>
 
           <h1 className="text-3xl sm:text-4xl font-bold text-white leading-tight mb-5">
-            {post.title}
+            {safePost.title}
           </h1>
-          <p className="text-lg text-[var(--text-muted)] leading-relaxed mb-8">{post.excerpt}</p>
+          <p className="text-lg text-[var(--text-muted)] leading-relaxed mb-8">{safePost.excerpt}</p>
 
           <div className="flex items-center gap-3 pb-8 border-b border-white/8">
             <div className="w-9 h-9 rounded-full bg-gradient-to-br from-[#8B2BE2] to-[#00C9A7] flex items-center justify-center">
@@ -144,7 +205,7 @@ export default async function PostPage({
               [&_thead]:bg-white/5
               [&_ul]:space-y-2 [&_ol]:space-y-2
               [&_input[type=checkbox]]:accent-[#00C9A7]"
-            dangerouslySetInnerHTML={{ __html: markdownToHtml(post.body) }}
+            dangerouslySetInnerHTML={{ __html: markdownToHtml(safePost.body) }}
           />
 
           {/* In-article CTA */}

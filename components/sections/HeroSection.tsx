@@ -132,15 +132,6 @@ export function HeroSection() {
                 </div>
               </StaggerItem>
             ))}
-            {/* Placeholder partner logos */}
-            {[1, 2, 3].map((n) => (
-              <StaggerItem key={n}>
-                <div
-                  className="h-7 w-24 rounded-lg glass opacity-20"
-                  aria-hidden="true"
-                />
-              </StaggerItem>
-            ))}
           </StaggerContainer>
         </div>
       </div>
