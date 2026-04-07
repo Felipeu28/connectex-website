@@ -45,7 +45,7 @@ export function Navbar() {
     >
       <nav className="max-w-7xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between">
         {/* Logo */}
-        <Link href="/" className="flex items-center gap-2.5 group" aria-label="ConnectEx home">
+        <Link href="/" className="flex items-center gap-2.5 group" aria-label="Connectex home">
           <Image
             src="/logos/logo-symbol.png"
             alt=""

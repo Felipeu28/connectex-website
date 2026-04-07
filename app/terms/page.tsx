@@ -1,9 +1,9 @@
 import type { Metadata } from 'next'
 
 export const metadata: Metadata = {
-  title: 'Terms of Service | ConnectEx Solutions',
+  title: 'Terms of Service | Connectex Solutions',
   description:
-    'ConnectEx Solutions terms of service — usage terms, intellectual property, liability limitations, and free vulnerability scan disclaimer for connectex.net.',
+    'Connectex Solutions terms of service — usage terms, intellectual property, liability limitations, and free vulnerability scan disclaimer for connectex.net.',
 }
 
 export default function TermsPage() {
@@ -16,11 +16,11 @@ export default function TermsPage() {
           <h2>Use of This Website</h2>
           <p>By accessing connectex.net, you agree to use the site for lawful purposes only. The content on this site is for informational purposes and does not constitute legal, financial, or technical advice.</p>
           <h2>Free Vulnerability Scan</h2>
-          <p>The free domain vulnerability scan offered by ConnectEx Solutions is an advisory service. Results are for informational purposes. ConnectEx Solutions makes no warranties about the completeness or accuracy of scan results.</p>
+          <p>The free domain vulnerability scan offered by Connectex Solutions is an advisory service. Results are for informational purposes. Connectex Solutions makes no warranties about the completeness or accuracy of scan results.</p>
           <h2>Intellectual Property</h2>
-          <p>All content on this website is the property of ConnectEx Solutions. You may not reproduce or redistribute any content without written permission.</p>
+          <p>All content on this website is the property of Connectex Solutions. You may not reproduce or redistribute any content without written permission.</p>
           <h2>Limitation of Liability</h2>
-          <p>ConnectEx Solutions is not liable for any damages arising from your use of this website or reliance on information provided.</p>
+          <p>Connectex Solutions is not liable for any damages arising from your use of this website or reliance on information provided.</p>
           <h2>Contact</h2>
           <p>For questions, email <a href="mailto:mark@connectex.net">mark@connectex.net</a>.</p>
         </div>

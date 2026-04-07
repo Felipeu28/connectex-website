@@ -16,7 +16,7 @@ There is no test suite configured.
 
 ## Architecture
 
-**ConnectEx** is a Next.js 16 SaaS platform for a technology advisory company targeting Austin SMBs. It combines a public marketing site with a full internal CRM, all in one Next.js App Router project.
+**Connectex** is a Next.js 16 SaaS platform for a technology advisory company targeting Austin SMBs. It combines a public marketing site with a full internal CRM, all in one Next.js App Router project.
 
 ### Two distinct surfaces
 

@@ -4,7 +4,7 @@ export function localBusinessSchema() {
   return {
     '@context': 'https://schema.org',
     '@type': ['LocalBusiness', 'ProfessionalService'],
-    name: 'ConnectEx Solutions',
+    name: 'Connectex Solutions',
     description:
       "Austin's vendor-neutral technology advisor for small business — sourcing IT, cybersecurity, cloud, and communications from 600+ providers.",
     url: BASE_URL,
@@ -48,7 +48,7 @@ export function serviceSchema({
     description,
     provider: {
       '@type': 'LocalBusiness',
-      name: 'ConnectEx Solutions',
+      name: 'Connectex Solutions',
       url: BASE_URL,
     },
     areaServed: {
@@ -115,7 +115,7 @@ export function blogPostSchema({
     },
     publisher: {
       '@type': 'Organization',
-      name: 'ConnectEx Solutions',
+      name: 'Connectex Solutions',
       url: BASE_URL,
     },
   }

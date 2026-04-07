@@ -10,11 +10,11 @@ import { SectionWrapper } from '@/components/ui/SectionWrapper'
 import { breadcrumbSchema } from '@/lib/schema'
 
 export const metadata: Metadata = {
-  title: "ConnectEx Solutions | Austin's Vendor-Neutral Technology Advisor",
+  title: "Connectex Solutions | Austin's Vendor-Neutral Technology Advisor",
   description:
     "Austin's vendor-neutral technology advisor for small business. We source IT, cybersecurity, cloud, and communications from 600+ providers — no vendor bias, no wasted budget.",
   openGraph: {
-    title: "ConnectEx Solutions | Austin's Vendor-Neutral Technology Advisor",
+    title: "Connectex Solutions | Austin's Vendor-Neutral Technology Advisor",
     description:
       "We source IT, cybersecurity, cloud, and communications from 600+ providers so Austin SMBs don't have to.",
     url: 'https://connectex.net',

@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 
 const BASE_URL = 'https://connectex.net'
-const SITE_NAME = 'ConnectEx Solutions'
+const SITE_NAME = 'Connectex Solutions'
 const DEFAULT_DESCRIPTION =
   "Austin's vendor-neutral technology advisor for small business. We source IT, cybersecurity, cloud, and communications from 600+ providers — no vendor bias, no wasted budget."
 

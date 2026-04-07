@@ -11,7 +11,7 @@ import {
 export const metadata = genMeta({
   title: 'Technology Marketplace — 600+ Vetted Solutions',
   description:
-    'Browse ConnectEx\'s technology marketplace — 600+ providers across IT, cybersecurity, cloud, and communications for Central Texas SMBs. One MDA, every category.',
+    'Browse Connectex\'s technology marketplace — 600+ providers across IT, cybersecurity, cloud, and communications for SMBs nationwide. One MDA, every category.',
   path: '/marketplace',
 })
 
@@ -76,7 +76,7 @@ export default function MarketplacePage() {
             600+ technology solutions.<br />One advisor. One agreement.
           </h1>
           <p className="text-[var(--text-muted)] text-lg max-w-2xl mx-auto mb-8">
-            Browse the ConnectEx marketplace — powered by AppDirect — covering every category of business technology. Find the right solution, and we&rsquo;ll manage the relationship from day one.
+            Browse the Connectex marketplace — powered by AppDirect — covering every category of business technology. Find the right solution, and we&rsquo;ll manage the relationship from day one.
           </p>
           <div className="flex flex-wrap justify-center gap-3">
             <Button variant="cta" size="lg" href="/contact">
@@ -136,7 +136,7 @@ export default function MarketplacePage() {
             </div>
             <h2 className="text-2xl font-bold text-[var(--text)] mb-3">Full marketplace coming soon</h2>
             <p className="text-[var(--text-muted)] max-w-xl mx-auto mb-8">
-              The ConnectEx marketplace catalog — powered by AppDirect — is being finalized. In the meantime, talk to Mark directly to access any of the 600+ providers.
+              The Connectex marketplace catalog — powered by AppDirect — is being finalized. In the meantime, talk to Mark directly to access any of the 600+ providers.
             </p>
             <div className="flex flex-wrap justify-center gap-3">
               <Button variant="cta" size="lg" href="/contact">Request Access</Button>
@@ -150,7 +150,7 @@ export default function MarketplacePage() {
       <SectionWrapper className="py-20 px-4 sm:px-6">
         <div className="max-w-7xl mx-auto">
           <h2 className="text-2xl sm:text-3xl font-bold text-[var(--text)] mb-10 text-center">
-            Why the ConnectEx marketplace?
+            Why the Connectex marketplace?
           </h2>
           <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
             {benefits.map((b, i) => (

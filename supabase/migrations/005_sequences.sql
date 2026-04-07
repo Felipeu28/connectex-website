@@ -1,4 +1,4 @@
--- Email sequences for ConnectEx CRM
+-- Email sequences for Connectex CRM
 
 create table if not exists crm_sequences (
   id uuid primary key default gen_random_uuid(),

@@ -101,7 +101,7 @@ function loadKnowledge(categories: TicketCategory[]): string {
 // ─── System prompt ───────────────────────────────────────────────────────────
 
 function buildSystemPrompt(knowledgeContext: string): string {
-  const basePrompt = `You are an expert IT support assistant for ConnectEx Solutions, a vendor-neutral technology advisor for SMBs in Austin, TX. You represent Mark, a 20+ year technology veteran.
+  const basePrompt = `You are an expert IT support assistant for Connectex Solutions, a vendor-neutral technology advisor for SMBs in Austin, TX. You represent Mark, a 20+ year technology veteran.
 
 Your job: triage IT support tickets using the knowledge base provided. Be specific, use exact steps, and reference real product names and settings.
 
@@ -186,7 +186,7 @@ async function notifyMark(ticket: {
       Authorization: `Bearer ${resendKey}`,
     },
     body: JSON.stringify({
-      from: 'ConnectEx Support <support@connectex.net>',
+      from: 'Connectex Support <support@connectex.net>',
       to: ['mark@connectex.net'],
       subject: `[${priorityLabel.toUpperCase()}] New ticket needs your attention: ${ticket.subject}`,
       html: `
@@ -331,7 +331,7 @@ Analyze this ticket and respond with ONLY valid JSON in this exact format:
     await supabase.from('ticket_messages').insert({
       ticket_id,
       sender_type: 'admin',
-      sender_name: 'ConnectEx AI Support',
+      sender_name: 'Connectex AI Support',
       message: triage.auto_response,
     })
 
@@ -344,7 +344,7 @@ Analyze this ticket and respond with ONLY valid JSON in this exact format:
     notifyClientNewReply(
       { clientName: ticket.name, clientEmail: ticket.email, subject: ticket.subject, token: ticket.token },
       triage.auto_response,
-      'ConnectEx AI Support'
+      'Connectex AI Support'
     ).catch(() => {})
   } else {
     await notifyMark(ticket, triage)

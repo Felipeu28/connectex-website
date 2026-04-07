@@ -53,7 +53,7 @@ export function HowItWorks() {
       <div className="max-w-7xl mx-auto">
         <MotionReveal>
           <div className="text-center mb-14">
-            <p className="text-[#00C9A7] text-sm font-semibold uppercase tracking-widest mb-3">How ConnectEx Works</p>
+            <p className="text-[#00C9A7] text-sm font-semibold uppercase tracking-widest mb-3">How Connectex Works</p>
             <h2 className="text-3xl sm:text-4xl font-bold text-[var(--text)] mb-4">
               Simple process. Serious results.
             </h2>

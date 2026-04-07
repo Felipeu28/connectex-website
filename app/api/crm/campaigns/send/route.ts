@@ -19,7 +19,7 @@ export async function POST(req: NextRequest) {
     }
 
     const resend = new Resend(resendApiKey)
-    const fromEmail = process.env.RESEND_FROM_EMAIL || 'Mark at ConnectEx <mark@connectex.net>'
+    const fromEmail = process.env.RESEND_FROM_EMAIL || 'Mark at Connectex <mark@connectex.net>'
     const supabase = await createSupabaseServer()
 
     // Fetch the campaign

@@ -1,6 +1,6 @@
 import { ImageResponse } from 'next/og'
 
-export const alt = 'ConnectEx Solutions — Austin\'s Vendor-Neutral Technology Advisor'
+export const alt = 'Connectex Solutions — Austin\'s Vendor-Neutral Technology Advisor'
 export const size = { width: 1200, height: 630 }
 export const contentType = 'image/png'
 
@@ -28,7 +28,7 @@ export default function OGImage() {
               letterSpacing: '0.05em',
             }}
           >
-            ConnectEx Solutions
+            Connectex Solutions
           </span>
         </div>
 

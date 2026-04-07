@@ -5,7 +5,7 @@ import Image from 'next/image'
 export const metadata: Metadata = {
   title: 'IT Support Portal',
   description:
-    'Submit and track IT support tickets with ConnectEx Solutions. No login required.',
+    'Submit and track IT support tickets with Connectex Solutions. No login required.',
   robots: { index: false, follow: false },
 }
 
@@ -35,7 +35,7 @@ export default function TicketingLayout({ children }: { children: React.ReactNod
             >
               <Image
                 src="/logos/logo-symbol.png"
-                alt="ConnectEx"
+                alt="Connectex"
                 width={36}
                 height={36}
                 className="w-8 h-8"
@@ -60,7 +60,7 @@ export default function TicketingLayout({ children }: { children: React.ReactNod
         {/* Minimal footer */}
         <footer className="border-t border-white/10 py-4">
           <p className="text-center text-xs text-[var(--color-text-muted)]">
-            &copy; {new Date().getFullYear()} ConnectEx Solutions. All rights reserved.
+            &copy; {new Date().getFullYear()} Connectex Solutions. All rights reserved.
           </p>
         </footer>
       </div>

@@ -44,7 +44,7 @@ export default function CRMLoginPage() {
           <div className="inline-flex items-center gap-3 mb-6">
             <Image
               src="/logos/logo-symbol.png"
-              alt="ConnectEx"
+              alt="Connectex"
               width={52}
               height={52}
               className="w-13 h-13"

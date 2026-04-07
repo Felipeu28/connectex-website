@@ -1,7 +1,7 @@
 import { ImageResponse } from 'next/og'
 import { solutions, getSolution } from '@/data/solutions'
 
-export const alt = 'ConnectEx Solutions'
+export const alt = 'Connectex Solutions'
 export const size = { width: 1200, height: 630 }
 export const contentType = 'image/png'
 
@@ -39,7 +39,7 @@ export default async function OGImage({ params }: { params: Promise<{ slug: stri
               color: '#FFFFFF',
             }}
           >
-            ConnectEx Solutions
+            Connectex Solutions
           </span>
           <span
             style={{

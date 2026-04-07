@@ -22,7 +22,7 @@ export async function GET(request: NextRequest) {
 
   const supabase = getSupabaseAdmin()
   const resend = new Resend(resendApiKey)
-  const fromEmail = process.env.RESEND_FROM_EMAIL || 'Mark at ConnectEx <mark@connectex.net>'
+  const fromEmail = process.env.RESEND_FROM_EMAIL || 'Mark at Connectex <mark@connectex.net>'
   const now = new Date().toISOString()
 
   // Find all scheduled campaigns whose send time has arrived

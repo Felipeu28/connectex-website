@@ -42,7 +42,7 @@ export function HeroSection() {
             <div className="flex items-center gap-3 mb-8">
               <Badge variant="accent" size="md">
                 <span className="w-1.5 h-1.5 rounded-full bg-[#00C9A7] mr-2 animate-pulse" />
-                Central Texas Technology Advisor
+                Nationwide Technology Advisor
               </Badge>
             </div>
           </MotionReveal>
@@ -121,7 +121,7 @@ export function HeroSection() {
         {/* Trust bar */}
         <div className="pt-10 border-t border-[var(--border)]">
           <p className="text-[10px] text-[var(--text-muted)] uppercase tracking-[0.2em] mb-6 font-medium">
-            Trusted by Central Texas businesses
+            Trusted by businesses nationwide
           </p>
           <StaggerContainer className="flex flex-wrap gap-x-10 gap-y-4 items-center">
             {trustItems.map((item) => (

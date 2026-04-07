@@ -479,7 +479,7 @@ export default function CampaignsPage() {
             <button onClick={() => setPreviewOpen(false)} className="absolute top-4 right-4 p-1.5 rounded-lg hover:bg-gray-100 text-gray-400" aria-label="Close preview">
               <X className="w-5 h-5" />
             </button>
-            <p className="text-xs text-gray-500 mb-1">From: ConnectEx Solutions &lt;mark@connectex.net&gt;</p>
+            <p className="text-xs text-gray-500 mb-1">From: Connectex Solutions &lt;mark@connectex.net&gt;</p>
             <p className="text-xs text-gray-500 mb-3">Subject: <strong>{previewCampaign.subject}</strong></p>
             <hr className="mb-4" />
             <div className="whitespace-pre-wrap text-sm leading-relaxed">{previewCampaign.body}</div>

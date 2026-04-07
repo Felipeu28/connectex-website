@@ -23,7 +23,7 @@
 
 ---
 
-## RingCentral (Available via AppDirect / ConnectEx)
+## RingCentral (Available via AppDirect / Connectex)
 
 ### App Not Ringing for Incoming Calls
 1. RingCentral app → Settings → Notifications → enable "Incoming Calls"

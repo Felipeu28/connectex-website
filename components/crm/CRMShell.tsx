@@ -45,7 +45,7 @@ export function CRMShell({ children }: { children: React.ReactNode }) {
       <Link href="/crm/dashboard" className="flex items-center gap-3 px-4 py-5 border-b border-white/8">
         <Image
           src="/logos/logo-symbol.png"
-          alt="ConnectEx"
+          alt="Connectex"
           width={36}
           height={36}
           className="w-9 h-9"
