@@ -1,3 +1,14 @@
+export interface Feature {
+  name: string
+  detail: string
+}
+
+export interface ProcessStep {
+  step: number
+  title: string
+  description: string
+}
+
 export interface Solution {
   slug: string
   title: string
@@ -7,11 +18,14 @@ export interface Solution {
   metaDescription: string
   icon: string
   color: string
-  features: string[]
+  features: Feature[]
   useCases: string[]
   differentiators: { heading: string; body: string }[]
   faqs: { question: string; answer: string }[]
   stat: { value: string; label: string }
+  processSteps: ProcessStep[]
+  pricing: { summary: string; note: string }
+  ctaDetail: string
 }
 
 export const solutions: Solution[] = [
@@ -27,12 +41,30 @@ export const solutions: Solution[] = [
     icon: 'Monitor',
     color: '#00C9A7',
     features: [
-      '24/7 proactive network monitoring',
-      'Unlimited helpdesk support',
-      'Patch management & updates',
-      'Vendor coordination & escalation',
-      'IT roadmap & budget planning',
-      'Hardware procurement',
+      {
+        name: '24/7 proactive network monitoring',
+        detail: 'Issues flagged before they cause downtime. You know there is a problem before your staff does — not after a workday is already lost.',
+      },
+      {
+        name: 'Unlimited helpdesk support',
+        detail: 'Every ticket, every user, no per-incident fees. Your team gets fast resolutions without you getting a surprise invoice.',
+      },
+      {
+        name: 'Patch management & updates',
+        detail: 'OS, firmware, and software patches applied on a schedule — reducing your attack surface and keeping systems stable.',
+      },
+      {
+        name: 'Vendor coordination & escalation',
+        detail: 'When something breaks with a vendor, we escalate on your behalf. No more being passed around on hold.',
+      },
+      {
+        name: 'IT roadmap & budget planning',
+        detail: 'A 12-month technology plan aligned to your business goals — no surprise capital expenses.',
+      },
+      {
+        name: 'Hardware procurement',
+        detail: 'We spec, source, and deploy the right hardware at the right price. No markup, no guessing.',
+      },
     ],
     useCases: [
       'Growing SMBs without a dedicated IT team',
@@ -77,6 +109,33 @@ export const solutions: Solution[] = [
       },
     ],
     stat: { value: '47%', label: 'of SMBs experience at least one IT failure per year that costs over $10,000' },
+    processSteps: [
+      {
+        step: 1,
+        title: 'Free IT environment audit',
+        description: 'We review your current setup — network, devices, software, backups, and security posture — and deliver a full report with no obligation.',
+      },
+      {
+        step: 2,
+        title: 'Provider matching',
+        description: 'We match you to the right MSP from our vetted network based on your industry, team size, compliance needs, and budget.',
+      },
+      {
+        step: 3,
+        title: 'Contract & onboarding',
+        description: 'We negotiate the contract and manage the onboarding timeline. Your team gets white-glove support from day one with minimal disruption.',
+      },
+      {
+        step: 4,
+        title: 'Ongoing advocacy',
+        description: 'We stay involved as your advisor — attending QBRs, reviewing SLA performance, and escalating on your behalf if issues arise.',
+      },
+    ],
+    pricing: {
+      summary: '$75–$150 per user/month',
+      note: 'Typical range for full managed IT coverage. Connectex sources options across the entire spectrum and negotiates on your behalf at no extra cost to you.',
+    },
+    ctaDetail: 'Get a free IT environment audit — we will show you where your gaps are and exactly what the right solution costs.',
   },
   {
     slug: 'cybersecurity',
@@ -90,12 +149,30 @@ export const solutions: Solution[] = [
     icon: 'Shield',
     color: '#FF6B6B',
     features: [
-      'Free domain & email security report',
-      'Email security (DMARC, DKIM, SPF)',
-      'Endpoint detection & response (EDR)',
-      'Security awareness training',
-      'Vulnerability assessments',
-      'Compliance readiness (HIPAA, SOC 2, CMMC)',
+      {
+        name: 'Free domain & email security report',
+        detail: 'We run a full scan of your domain: DMARC/DKIM/SPF status, data leaks, blacklist flags, and exposed vulnerabilities — before we recommend anything.',
+      },
+      {
+        name: 'Email security (DMARC, DKIM, SPF)',
+        detail: 'The #1 vector for SMB breaches. We source and configure email authentication to stop phishing, spoofing, and business email compromise attacks.',
+      },
+      {
+        name: 'Endpoint detection & response (EDR)',
+        detail: 'Monitors every device in real-time for suspicious behavior. Goes far beyond antivirus to stop zero-day threats and ransomware before they spread.',
+      },
+      {
+        name: 'Security awareness training',
+        detail: 'Monthly phishing simulations and micro-training that measurably reduce your team\'s susceptibility to social engineering.',
+      },
+      {
+        name: 'Vulnerability assessments',
+        detail: 'Regular scans of your network and applications to surface risks before attackers find them — with a prioritized remediation plan.',
+      },
+      {
+        name: 'Compliance readiness (HIPAA, SOC 2, CMMC)',
+        detail: 'We source specialists that navigate the specific compliance requirements for your industry and customer contracts.',
+      },
     ],
     useCases: [
       'Businesses receiving suspicious emails or phishing attempts',
@@ -140,6 +217,33 @@ export const solutions: Solution[] = [
       },
     ],
     stat: { value: '$200K+', label: 'average cost of a data breach for a small business' },
+    processSteps: [
+      {
+        step: 1,
+        title: 'Free vulnerability scan',
+        description: 'We run a domain report showing your email security gaps, data leaks, and exposed vulnerabilities. Zero cost, zero obligation, under 24 hours.',
+      },
+      {
+        step: 2,
+        title: 'Risk prioritization',
+        description: 'We rank your vulnerabilities by severity and business impact — so you know what to fix first and why.',
+      },
+      {
+        step: 3,
+        title: 'Solution sourcing',
+        description: 'We match you to best-in-class solutions from our cybersecurity vendor network — email security, EDR, training, and compliance.',
+      },
+      {
+        step: 4,
+        title: 'Ongoing monitoring',
+        description: 'We set up monitoring, alerting, and a review cadence so your protection stays current as threats evolve.',
+      },
+    ],
+    pricing: {
+      summary: 'Free assessment, then $15–$50 per user/month',
+      note: 'Basic email security and EDR coverage starts under $20/user. Full-stack protection with compliance tooling runs higher. We scope exactly what you need — nothing more.',
+    },
+    ctaDetail: 'Start with the free domain scan — most Austin SMBs we assess have at least one critical vulnerability they didn\'t know about.',
   },
   {
     slug: 'cloud',
@@ -153,12 +257,30 @@ export const solutions: Solution[] = [
     icon: 'Cloud',
     color: '#60A5FA',
     features: [
-      'Microsoft 365 & Google Workspace',
-      'Cloud migration planning & execution',
-      'Cloud backup & disaster recovery',
-      'VPN & secure remote access',
-      'File sharing & document management',
-      'Cloud cost optimization',
+      {
+        name: 'Microsoft 365 & Google Workspace',
+        detail: 'We source, license, configure, and optimize the right productivity platform for your team\'s workflow — at the best available price.',
+      },
+      {
+        name: 'Cloud migration planning & execution',
+        detail: 'Full migration management from on-premise servers to the cloud — data, email, applications, and users — with zero-downtime cutovers.',
+      },
+      {
+        name: 'Cloud backup & disaster recovery',
+        detail: 'Off-site backups with tested restore times. If ransomware hits, you are back up in hours, not days.',
+      },
+      {
+        name: 'VPN & secure remote access',
+        detail: 'Properly configured remote access that does not create new security holes. Includes zero-trust options for higher-risk environments.',
+      },
+      {
+        name: 'File sharing & document management',
+        detail: 'SharePoint, OneDrive, or Google Drive set up with the right permissions, folder structure, and team training for real adoption.',
+      },
+      {
+        name: 'Cloud cost optimization',
+        detail: 'We audit and right-size your current cloud licenses. Most SMBs find 20–30% in savings within 30 days.',
+      },
     ],
     useCases: [
       'Businesses moving off legacy on-premise servers',
@@ -203,6 +325,33 @@ export const solutions: Solution[] = [
       },
     ],
     stat: { value: '94%', label: 'of SMBs use at least one cloud service — most are overpaying for it' },
+    processSteps: [
+      {
+        step: 1,
+        title: 'Cloud readiness assessment',
+        description: 'We audit your current environment: what is on-premise, what is already in the cloud, bandwidth requirements, and your security posture.',
+      },
+      {
+        step: 2,
+        title: 'Migration planning',
+        description: 'A detailed migration plan with timeline, rollback procedures, data mapping, and a zero-downtime cutover strategy.',
+      },
+      {
+        step: 3,
+        title: 'Migration & configuration',
+        description: 'We manage the full move — data, email, applications, and user accounts — coordinating every vendor involved.',
+      },
+      {
+        step: 4,
+        title: 'Training & optimization',
+        description: 'User training, documentation, and a 90-day optimization review to ensure adoption and right-size ongoing costs.',
+      },
+    ],
+    pricing: {
+      summary: 'Microsoft 365 from $6/user/month; migrations from $2,500',
+      note: 'Licensing flows through us at the same or better price than direct. Migration scope depends on complexity — most SMB migrations (10–50 users) complete in 2–6 weeks.',
+    },
+    ctaDetail: 'Get a free cloud audit — we will show you what you are paying versus what you should be paying, and what a migration would actually cost.',
   },
   {
     slug: 'communications',
@@ -216,12 +365,30 @@ export const solutions: Solution[] = [
     icon: 'Phone',
     color: '#A78BFA',
     features: [
-      'VoIP business phone systems',
-      'Unified Communications as a Service (UCaaS)',
-      'Video conferencing integration',
-      'Mobile app for desk phone replacement',
-      'Call center & contact center solutions',
-      'Carrier comparison & contract negotiation',
+      {
+        name: 'VoIP business phone systems',
+        detail: 'Modern cloud phone systems with desktop apps, mobile apps, and full feature parity with legacy PBX — at a fraction of the cost.',
+      },
+      {
+        name: 'Unified Communications as a Service (UCaaS)',
+        detail: 'Voice, video, messaging, and file sharing in one platform. No more juggling Zoom, Teams, and a desk phone separately.',
+      },
+      {
+        name: 'Video conferencing integration',
+        detail: 'Integrated video that works with your existing calendar and contact system — no separate licenses or logins needed.',
+      },
+      {
+        name: 'Mobile app for desk phone replacement',
+        detail: 'Your office number follows you anywhere. Full desk phone features on any smartphone — with the same extension and voicemail.',
+      },
+      {
+        name: 'Call center & contact center solutions',
+        detail: 'Queue management, IVR, call recording, and reporting for businesses with customer-facing teams.',
+      },
+      {
+        name: 'Carrier comparison & contract negotiation',
+        detail: 'We run your requirements through every major carrier and negotiate the best rate on your behalf — no single-vendor bias.',
+      },
     ],
     useCases: [
       'Businesses replacing legacy PBX or traditional phone systems',
@@ -266,6 +433,33 @@ export const solutions: Solution[] = [
       },
     ],
     stat: { value: '60%', label: 'average cost reduction when Austin SMBs switch from legacy PBX to VoIP' },
+    processSteps: [
+      {
+        step: 1,
+        title: 'Phone system audit',
+        description: 'We review your current system, contracts, feature usage, and call volumes to understand exactly what you need — and what you do not.',
+      },
+      {
+        step: 2,
+        title: 'Carrier comparison',
+        description: 'We run your requirements through every relevant carrier — Verizon, AT&T, RingCentral, 8x8, and more — and present real pricing side-by-side.',
+      },
+      {
+        step: 3,
+        title: 'Contract negotiation',
+        description: 'We negotiate on your behalf, handling term lengths, pricing tiers, porting timelines, and SLA guarantees.',
+      },
+      {
+        step: 4,
+        title: 'Number porting & cutover',
+        description: 'We manage the porting process and coordinate a zero-downtime cutover to your new system, with training for your team.',
+      },
+    ],
+    pricing: {
+      summary: '$20–$45 per user/month',
+      note: 'VoIP typically costs 40–60% less than legacy PBX with no hardware investment. Connectex compares every carrier to get you the best available rate and terms.',
+    },
+    ctaDetail: 'Get a free phone system audit — we will compare what you are paying to what is available and tell you exactly what you would save.',
   },
   {
     slug: 'connectivity',
@@ -279,12 +473,30 @@ export const solutions: Solution[] = [
     icon: 'Globe',
     color: '#34D399',
     features: [
-      'Dedicated fiber internet circuits',
-      'SD-WAN network optimization',
-      'Wireless backup & automatic failover',
-      'Multi-carrier bonding',
-      'Business broadband (cable/fiber)',
-      'Carrier comparison & contract negotiation',
+      {
+        name: 'Dedicated fiber internet circuits',
+        detail: 'Dedicated bandwidth that is not shared with neighbors. Consistent speeds during peak hours with SLA-backed uptime guarantees.',
+      },
+      {
+        name: 'SD-WAN network optimization',
+        detail: 'Intelligently manages traffic across multiple connections, prioritizing critical apps and auto-routing around outages.',
+      },
+      {
+        name: 'Wireless backup & automatic failover',
+        detail: '4G/5G backup circuit that activates within 30–60 seconds if your primary connection fails — so you never lose revenue to an outage.',
+      },
+      {
+        name: 'Multi-carrier bonding',
+        detail: 'Combine two or more circuits for higher throughput and redundancy — ideal for cloud-heavy businesses or remote office connectivity.',
+      },
+      {
+        name: 'Business broadband (cable/fiber)',
+        detail: 'Shared broadband from Spectrum, Comcast, or AT&T where cost efficiency matters more than dedicated SLAs.',
+      },
+      {
+        name: 'Carrier comparison & contract negotiation',
+        detail: 'We run every carrier at your address and negotiate — most businesses find 20–40% savings versus renewing direct.',
+      },
     ],
     useCases: [
       'Businesses renewing their internet contract without comparing alternatives',
@@ -329,6 +541,33 @@ export const solutions: Solution[] = [
       },
     ],
     stat: { value: '87%', label: 'of SMBs overpay on internet by renewing without comparing alternatives' },
+    processSteps: [
+      {
+        step: 1,
+        title: 'Address & requirements survey',
+        description: 'We run every carrier at your physical address and map available bandwidth tiers, latency specs, and contract terms.',
+      },
+      {
+        step: 2,
+        title: 'Side-by-side comparison',
+        description: 'You see real pricing from every available provider in one view — no one carrier\'s sales pitch.',
+      },
+      {
+        step: 3,
+        title: 'Contract negotiation',
+        description: 'We negotiate term length, pricing escalators, SLA credits, and early termination flexibility on your behalf.',
+      },
+      {
+        step: 4,
+        title: 'Installation coordination',
+        description: 'We coordinate the carrier, your team, and any cabling contractors to get you live on time with minimal disruption.',
+      },
+    ],
+    pricing: {
+      summary: '$200–$1,500+/month depending on bandwidth',
+      note: 'Dedicated fiber starts around $200/month for 50 Mbps. 1 Gbps dedicated runs $500–$1,500+ depending on carrier and location. We always show you the full market.',
+    },
+    ctaDetail: 'Get a free connectivity audit — we will run every carrier at your address and show you what is available versus what you are currently paying.',
   },
   {
     slug: 'ai-automation',
@@ -342,12 +581,30 @@ export const solutions: Solution[] = [
     icon: 'Cpu',
     color: '#F59E0B',
     features: [
-      'AI chatbots & virtual assistants',
-      'Workflow & process automation',
-      'AI-powered cybersecurity tools',
-      'Predictive analytics & reporting',
-      'CRM automation & lead scoring',
-      'Document processing & OCR',
+      {
+        name: 'AI chatbots & virtual assistants',
+        detail: 'Handles your highest-volume customer inquiries 24/7 without adding headcount — trained on your specific products, services, and FAQs.',
+      },
+      {
+        name: 'Workflow & process automation',
+        detail: 'Identifies your top manual workflows and automates the triggers, routing, and outputs — from invoice processing to lead follow-up.',
+      },
+      {
+        name: 'AI-powered cybersecurity tools',
+        detail: 'Anomaly detection and threat intelligence that uses machine learning to catch what rule-based tools miss.',
+      },
+      {
+        name: 'Predictive analytics & reporting',
+        detail: 'Turn your existing data into forward-looking insights — sales forecasting, churn prediction, demand planning — without a data science team.',
+      },
+      {
+        name: 'CRM automation & lead scoring',
+        detail: 'Automatically score, route, and follow up on leads based on behavior signals — so sales focuses on deals ready to close.',
+      },
+      {
+        name: 'Document processing & OCR',
+        detail: 'Intelligent document capture that extracts, categorizes, and routes information from invoices, contracts, and forms automatically.',
+      },
     ],
     useCases: [
       'Businesses looking to automate repetitive manual processes',
@@ -392,6 +649,33 @@ export const solutions: Solution[] = [
       },
     ],
     stat: { value: '4x', label: 'productivity gain for SMBs that automate their top 3 repetitive workflows' },
+    processSteps: [
+      {
+        step: 1,
+        title: 'Process audit',
+        description: 'We map your top 5–10 manual workflows and score each by volume, error rate, and labor cost to identify where AI delivers the fastest ROI.',
+      },
+      {
+        step: 2,
+        title: 'Tool selection',
+        description: 'We source the right tools from our AI vendor network — matching functionality, integration compatibility, and total cost of ownership.',
+      },
+      {
+        step: 3,
+        title: 'Integration & implementation',
+        description: 'We manage the implementation, API integrations with your existing systems, and configuration — no technical staff required on your end.',
+      },
+      {
+        step: 4,
+        title: 'Measurement & optimization',
+        description: 'We establish before/after metrics and review ROI at 30, 60, and 90 days — then optimize based on real usage data.',
+      },
+    ],
+    pricing: {
+      summary: '$50–$500+/month per tool',
+      note: 'AI tools have a wide range. We only recommend solutions with a projected payback under 6 months. Most SMBs start with one automation that pays for itself in 60–90 days.',
+    },
+    ctaDetail: 'Get a free AI readiness assessment — we will identify your top 3 automation opportunities and estimate the ROI for each.',
   },
 ]
 

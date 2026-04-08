@@ -24,7 +24,10 @@ interface BlogPost {
   status: 'draft' | 'published'
   published_at: string | null
   created_at: string
+  updated_at?: string
   excerpt: string
+  read_time?: string
+  featured?: boolean
   isStatic: boolean
 }
 
