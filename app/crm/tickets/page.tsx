@@ -14,6 +14,7 @@ export default function CRMTicketsPage() {
   const [searchInput, setSearchInput] = useState('')
   const [search, setSearch] = useState('')
   const [statusFilter, setStatusFilter] = useState<string>('all')
+  const [needsYou, setNeedsYou] = useState(false)
   const [page, setPage] = useState(1)
   const [totalCount, setTotalCount] = useState(0)
   const pageSize = 25
@@ -33,8 +34,12 @@ export default function CRMTicketsPage() {
       const supabase = createSupabaseBrowser()
       let query = supabase.from('tickets').select('*', { count: 'exact' }).order('created_at', { ascending: false })
 
-      if (statusFilter !== 'all') {
-        query = query.eq('status', statusFilter)
+      if (needsYou) {
+        query = query.eq('routed_to_mark', true).eq('human_took_over', false)
+      } else {
+        if (statusFilter !== 'all') {
+          query = query.eq('status', statusFilter)
+        }
       }
       if (search) {
         query = query.or(`subject.ilike.%${search}%,name.ilike.%${search}%,email.ilike.%${search}%`)
@@ -47,14 +52,18 @@ export default function CRMTicketsPage() {
       setTotalCount(count ?? 0)
       setLoading(false)
     })()
-  }, [search, statusFilter, page])
+  }, [search, statusFilter, page, needsYou])
 
   async function load() {
     const supabase = createSupabaseBrowser()
     let query = supabase.from('tickets').select('*', { count: 'exact' }).order('created_at', { ascending: false })
 
-    if (statusFilter !== 'all') {
-      query = query.eq('status', statusFilter)
+    if (needsYou) {
+      query = query.eq('routed_to_mark', true).eq('human_took_over', false)
+    } else {
+      if (statusFilter !== 'all') {
+        query = query.eq('status', statusFilter)
+      }
     }
     if (search) {
       query = query.or(`subject.ilike.%${search}%,name.ilike.%${search}%,email.ilike.%${search}%`)
@@ -87,6 +96,23 @@ export default function CRMTicketsPage() {
           </div>
         </div>
 
+        {/* Tab bar */}
+        <div className="flex items-center gap-1 border-b border-white/8 pb-0">
+          <button
+            onClick={() => { setNeedsYou(false); setPage(1) }}
+            className={`px-4 py-2 text-sm font-medium rounded-t-lg transition-colors ${!needsYou ? 'text-white border-b-2 border-[#00C9A7] -mb-px' : 'text-[var(--color-text-muted)] hover:text-white'}`}
+          >
+            All Tickets
+          </button>
+          <button
+            onClick={() => { setNeedsYou(true); setPage(1) }}
+            className={`flex items-center gap-1.5 px-4 py-2 text-sm font-medium rounded-t-lg transition-colors ${needsYou ? 'text-[#F59E0B] border-b-2 border-[#F59E0B] -mb-px' : 'text-[var(--color-text-muted)] hover:text-white'}`}
+          >
+            <AlertTriangle className="w-3.5 h-3.5" />
+            Needs You
+          </button>
+        </div>
+
         {/* Filters */}
         <div className="flex flex-col sm:flex-row gap-3">
           <div className="relative flex-1">
@@ -99,16 +125,18 @@ export default function CRMTicketsPage() {
               className="w-full pl-10 pr-4 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white placeholder:text-[var(--color-text-faint)] focus:outline-none focus:ring-2 focus:ring-[#00C9A7] text-sm"
             />
           </div>
-          <select
-            value={statusFilter}
-            onChange={(e) => { setStatusFilter(e.target.value); setPage(1) }}
-            className="px-3 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white text-sm focus:outline-none focus:ring-2 focus:ring-[#00C9A7]"
-          >
-            <option value="all">All Status</option>
-            {Object.entries(TICKET_STATUS_CONFIG).map(([key, config]) => (
-              <option key={key} value={key}>{config.label}</option>
-            ))}
-          </select>
+          {!needsYou && (
+            <select
+              value={statusFilter}
+              onChange={(e) => { setStatusFilter(e.target.value); setPage(1) }}
+              className="px-3 py-2.5 bg-white/5 border border-white/10 rounded-xl text-white text-sm focus:outline-none focus:ring-2 focus:ring-[#00C9A7]"
+            >
+              <option value="all">All Status</option>
+              {Object.entries(TICKET_STATUS_CONFIG).map(([key, config]) => (
+                <option key={key} value={key}>{config.label}</option>
+              ))}
+            </select>
+          )}
         </div>
 
         {/* Table */}

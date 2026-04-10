@@ -5,14 +5,14 @@ import { CRMShell } from '@/components/crm/CRMShell'
 import { createSupabaseBrowser } from '@/lib/supabase-browser'
 import { TICKET_STATUS_CONFIG } from '@/lib/crm-types'
 import type { Ticket } from '@/lib/crm-types'
-import { ArrowLeft, Send, ExternalLink, User, Bot, AlertTriangle, Search, X } from 'lucide-react'
+import { ArrowLeft, Send, ExternalLink, User, Bot, AlertTriangle, Search, X, Shield } from 'lucide-react'
 import Link from 'next/link'
 import { clsx } from 'clsx'
 
 interface TicketMessage {
   id: string
   ticket_id: string
-  sender_type: 'client' | 'admin'
+  sender_type: 'client' | 'admin' | 'ai'
   sender_name: string
   message: string
   created_at: string
@@ -204,6 +204,35 @@ export default function CRMTicketDetailPage({ params }: { params: Promise<{ id: 
           </div>
         </div>
 
+        {/* Needs you banner */}
+        {ticket.routed_to_mark && !ticket.human_took_over && (
+          <div className="flex items-start gap-3 px-4 py-3 rounded-xl bg-[#F59E0B]/10 border border-[#F59E0B]/30">
+            <AlertTriangle className="w-4 h-4 text-[#F59E0B] flex-shrink-0 mt-0.5" />
+            <div>
+              <p className="text-sm font-semibold text-[#F59E0B]">AI couldn&apos;t fully resolve this</p>
+              <p className="text-xs text-[#F59E0B]/80 mt-0.5">
+                {ticket.ai_confidence != null
+                  ? `AI confidence was ${ticket.ai_confidence}% — below the routing threshold. `
+                  : ''}
+                Your first reply will take over from AI and the client will hear directly from you.
+              </p>
+            </div>
+            {ticket.ai_confidence != null && (
+              <span className="ml-auto flex-shrink-0 text-xs font-bold px-2 py-0.5 rounded-full bg-[#F59E0B]/20 text-[#F59E0B]">
+                {ticket.ai_confidence}% confidence
+              </span>
+            )}
+          </div>
+        )}
+
+        {/* Human took over banner */}
+        {ticket.human_took_over && (
+          <div className="flex items-center gap-3 px-4 py-3 rounded-xl bg-[#00C9A7]/10 border border-[#00C9A7]/30">
+            <Shield className="w-4 h-4 text-[#00C9A7] flex-shrink-0" />
+            <p className="text-sm text-[#00C9A7]">You have taken over this ticket — AI responses are paused.</p>
+          </div>
+        )}
+
         {/* Contact link panel */}
         <div className="glass rounded-xl p-4">
           <div className="flex items-center justify-between gap-3">
@@ -313,18 +342,19 @@ export default function CRMTicketDetailPage({ params }: { params: Promise<{ id: 
                   key={m.id}
                   className={clsx(
                     'p-3 rounded-lg max-w-[85%]',
-                    m.sender_type === 'admin'
-                      ? m.sender_name === 'Connectex AI Support'
-                        ? 'ml-auto bg-[#8B2BE2]/10 border border-[#8B2BE2]/20'
-                        : 'ml-auto bg-[#00C9A7]/10 border border-[#00C9A7]/20'
-                      : 'bg-white/[0.03] border border-white/5'
+                    m.sender_type === 'ai'
+                      ? 'ml-auto bg-[#8B2BE2]/10 border border-[#8B2BE2]/20'
+                      : m.sender_type === 'admin'
+                        ? 'ml-auto bg-[#00C9A7]/10 border border-[#00C9A7]/20'
+                        : 'bg-white/[0.03] border border-white/5'
                   )}
                 >
                   <div className="flex items-center gap-2 mb-1">
-                    {m.sender_name === 'Connectex AI Support' && <Bot className="w-3 h-3 text-[#C084FC]" />}
+                    {m.sender_type === 'ai' && <Bot className="w-3 h-3 text-[#C084FC]" />}
+                    {m.sender_type === 'admin' && <Shield className="w-3 h-3 text-[#00C9A7]" />}
                     <span className={clsx(
                       'text-xs font-medium',
-                      m.sender_name === 'Connectex AI Support' ? 'text-[#C084FC]' :
+                      m.sender_type === 'ai' ? 'text-[#C084FC]' :
                       m.sender_type === 'admin' ? 'text-[#00C9A7]' : 'text-white'
                     )}>
                       {m.sender_name}

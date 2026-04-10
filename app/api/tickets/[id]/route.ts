@@ -48,7 +48,7 @@ export async function POST(req: NextRequest, context: RouteContext) {
     }
 
     // Validate sender_type
-    if (!['client', 'admin'].includes(sender_type)) {
+    if (!['client', 'admin', 'ai'].includes(sender_type)) {
       return NextResponse.json({ error: 'Invalid sender type' }, { status: 400 })
     }
 
@@ -57,7 +57,7 @@ export async function POST(req: NextRequest, context: RouteContext) {
     // Look up the ticket by token to get the internal id
     const { data: ticket, error: ticketError } = await supabase
       .from('tickets')
-      .select('id, token, status, name, email, subject')
+      .select('id, token, status, name, email, subject, human_took_over')
       .eq('token', token)
       .single()
 
@@ -90,13 +90,15 @@ export async function POST(req: NextRequest, context: RouteContext) {
       return NextResponse.json({ error: 'Failed to send message' }, { status: 500 })
     }
 
-    // Update the ticket's updated_at timestamp
-    await supabase
-      .from('tickets')
-      .update({ updated_at: new Date().toISOString() })
-      .eq('id', ticket.id)
+    // Mark human_took_over on first admin reply (stops AI from responding further)
+    const updates: Record<string, unknown> = { updated_at: new Date().toISOString() }
+    if (sender_type === 'admin' && !ticket.human_took_over) {
+      updates.human_took_over = true
+      updates.human_took_over_at = new Date().toISOString()
+    }
+    await supabase.from('tickets').update(updates).eq('id', ticket.id)
 
-    // Email client when admin/AI replies
+    // Email client when admin replies
     if (sender_type === 'admin') {
       notifyClientNewReply(
         { clientName: ticket.name, clientEmail: ticket.email, subject: ticket.subject, token: ticket.token },

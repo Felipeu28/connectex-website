@@ -118,7 +118,12 @@ export interface Ticket {
   contact_id: string | null
   ai_response: string | null
   ai_handled: boolean
+  ai_confidence: number | null
+  ai_category: string | null
   routed_to_mark: boolean
+  human_took_over: boolean
+  human_took_over_at: string | null
+  user_id: string | null
   created_at: string
   updated_at: string
   contact?: { id: string; name: string; email: string | null } | null

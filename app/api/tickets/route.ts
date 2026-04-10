@@ -16,7 +16,7 @@ function getSupabaseAdmin() {
 export async function POST(req: NextRequest) {
   try {
     const data = await req.json()
-    const { name, email, company, subject, description, priority, image_url } = data
+    const { name, email, company, subject, description, priority, image_url, user_id } = data
 
     // Validate required fields
     if (!name || !email || !subject || !description) {
@@ -44,6 +44,7 @@ export async function POST(req: NextRequest) {
         description,
         priority: safePriority,
         image_url: image_url || null,
+        user_id: user_id || null,
       })
       .select('id, token')
       .single()
