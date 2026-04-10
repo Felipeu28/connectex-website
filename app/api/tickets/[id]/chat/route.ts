@@ -197,11 +197,28 @@ export async function POST(
     .eq('ticket_id', ticket.id)
     .order('created_at', { ascending: true })
 
+  // Load client device inventory (pre-load for contextual AI answers)
+  const clientDeviceContext = await (async () => {
+    try {
+      const { data: products } = await admin
+        .from('client_products')
+        .select('device_type, manufacturer, model, serial_number, notes')
+        .eq('client_email', ticket.email.toLowerCase().trim())
+      if (!products || products.length === 0) return ''
+      const lines = products.map((p: { device_type: string; manufacturer: string | null; model: string; serial_number: string | null; notes: string | null }) =>
+        `- ${p.device_type}: ${p.manufacturer ? `${p.manufacturer} ` : ''}${p.model}${p.serial_number ? ` (S/N: ${p.serial_number})` : ''}${p.notes ? ` — ${p.notes}` : ''}`
+      )
+      return `## Client Devices on File\n${lines.join('\n')}`
+    } catch {
+      return ''
+    }
+  })()
+
   // Detect category and load knowledge
   const categories = detectCategory(ticket.subject, ticket.description)
   const staticKnowledge = loadKnowledge(categories)
   const dynamicKnowledge = await loadDynamicKnowledge(admin, categories)
-  const knowledge = [staticKnowledge, dynamicKnowledge].filter(Boolean).join('\n\n---\n\n')
+  const knowledge = [staticKnowledge, dynamicKnowledge, clientDeviceContext].filter(Boolean).join('\n\n---\n\n')
 
   // Build conversation history string for context
   const historyMessages = (history ?? [])
