@@ -193,7 +193,7 @@ export async function POST(
   // Load conversation history
   const { data: history } = await admin
     .from('ticket_messages')
-    .select('sender_type, sender_name, message, created_at')
+    .select('id, sender_type, sender_name, message, created_at')
     .eq('ticket_id', ticket.id)
     .order('created_at', { ascending: true })
 
@@ -222,9 +222,9 @@ export async function POST(
 
   // Build conversation history string for context
   const historyMessages = (history ?? [])
-    .filter((m: { created_at: string }) => {
+    .filter((m: { id: string }) => {
       // Exclude the message we just inserted (avoid double-sending)
-      return clientMsg ? m.created_at !== clientMsg.created_at : true
+      return clientMsg ? m.id !== clientMsg.id : true
     })
     .map((m: { sender_type: string; sender_name: string; message: string }) => {
       const role = m.sender_type === 'client' ? 'Client' : m.sender_type === 'ai' ? 'AI Support' : 'Mark'

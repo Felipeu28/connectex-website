@@ -52,13 +52,6 @@ export default async function PortalDashboardPage() {
   const userEmail = session.user.email!
   const admin = getSupabaseAdmin()
 
-  // Backfill user_id on historical tickets for this email (runs silently)
-  await admin
-    .from('tickets')
-    .update({ user_id: session.user.id })
-    .eq('email', userEmail)
-    .is('user_id', null)
-
   // Fetch all tickets for this client
   const { data: tickets } = await admin
     .from('tickets')

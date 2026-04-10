@@ -352,7 +352,7 @@ Analyze this ticket and respond with ONLY valid JSON in this exact format:
   }
 
   const triage = triageResult.data
-  const shouldHandle = triage.can_handle && triage.confidence >= 60
+  const shouldHandle = triage.can_handle && triage.confidence >= 65
   const now = new Date().toISOString()
 
   const ticketUpdate: Record<string, unknown> = {
