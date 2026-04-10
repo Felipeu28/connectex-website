@@ -182,7 +182,7 @@ export default function ImportContactsPage() {
   const [uniqueStatuses, setUniqueStatuses] = useState<string[]>([])
   const [statusMapping, setStatusMapping] = useState<StatusMapping>({})
   const [importing, setImporting] = useState(false)
-  const [result, setResult] = useState<{ imported: number; skipped: number; errors: string[] } | null>(null)
+  const [result, setResult] = useState<{ imported: number; skipped: number; devices_imported?: number; errors: string[] } | null>(null)
   const [fileName, setFileName] = useState('')
 
   function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
@@ -451,14 +451,18 @@ export default function ImportContactsPage() {
               <h2 className="text-xl font-bold text-white">Import complete</h2>
               <p className="text-sm text-[var(--color-text-muted)] mt-1">Your Airtable contacts are now in the CRM.</p>
             </div>
-            <div className="grid grid-cols-2 gap-4 max-w-xs mx-auto">
+            <div className="grid grid-cols-3 gap-4 max-w-lg mx-auto">
               <div className="p-4 rounded-xl bg-[#00C9A7]/10 border border-[#00C9A7]/20">
                 <p className="text-2xl font-bold text-[#00C9A7]">{result.imported}</p>
-                <p className="text-xs text-[#00C9A7]/80 mt-0.5">Imported</p>
+                <p className="text-xs text-[#00C9A7]/80 mt-0.5">Contacts</p>
+              </div>
+              <div className="p-4 rounded-xl bg-[#A78BFA]/10 border border-[#A78BFA]/20">
+                <p className="text-2xl font-bold text-[#A78BFA]">{result.devices_imported ?? 0}</p>
+                <p className="text-xs text-[#A78BFA]/80 mt-0.5">Devices</p>
               </div>
               <div className="p-4 rounded-xl bg-white/5 border border-white/10">
                 <p className="text-2xl font-bold text-white">{result.skipped}</p>
-                <p className="text-xs text-[var(--color-text-faint)] mt-0.5">Skipped (dupes)</p>
+                <p className="text-xs text-[var(--color-text-faint)] mt-0.5">Skipped</p>
               </div>
             </div>
             {result.errors.length > 0 && (
