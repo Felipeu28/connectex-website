@@ -187,7 +187,7 @@ async function notifyMark(ticket: {
     },
     body: JSON.stringify({
       from: 'Connectex Support <support@connectex.net>',
-      to: ['mark@connectex.net'],
+      to: ['support@connectex.net'],
       subject: `[${priorityLabel.toUpperCase()}] New ticket needs your attention: ${ticket.subject}`,
       html: `
         <div style="font-family: system-ui, sans-serif; max-width: 600px; margin: 0 auto; background: #0F1B2D; color: #E8EAED; border-radius: 12px; overflow: hidden;">

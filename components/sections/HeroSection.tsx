@@ -42,7 +42,7 @@ export function HeroSection() {
             <div className="flex items-center gap-3 mb-8">
               <Badge variant="accent" size="md">
                 <span className="w-1.5 h-1.5 rounded-full bg-[#00C9A7] mr-2 animate-pulse" />
-                Nationwide Technology Advisor
+                Austin-Based &middot; Vendor-Neutral
               </Badge>
             </div>
           </MotionReveal>

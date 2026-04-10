@@ -6,7 +6,6 @@ import { useRouter } from 'next/navigation'
 import { Send, Upload, AlertCircle, X, ImageIcon } from 'lucide-react'
 import { Button } from '@/components/ui/Button'
 import { createSupabaseBrowser } from '@/lib/supabase-browser'
-import type { TicketPriority } from '@/lib/ticket-types'
 
 interface FormData {
   name: string
@@ -14,7 +13,6 @@ interface FormData {
   company: string
   subject: string
   description: string
-  priority: TicketPriority
 }
 
 export function TicketForm() {
@@ -28,9 +26,7 @@ export function TicketForm() {
     register,
     handleSubmit,
     formState: { errors },
-  } = useForm<FormData>({
-    defaultValues: { priority: 'medium' },
-  })
+  } = useForm<FormData>()
 
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0] ?? null
@@ -87,7 +83,7 @@ export function TicketForm() {
           company: data.company || undefined,
           subject: data.subject,
           description: data.description,
-          priority: data.priority,
+          priority: 'medium',
           image_url,
         }),
       })
@@ -196,25 +192,11 @@ export function TicketForm() {
         )}
       </div>
 
-      {/* Priority & Attachment */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <div>
-          <label htmlFor="priority" className={labelClasses}>Priority</label>
-          <select
-            id="priority"
-            className={inputClasses + ' appearance-none cursor-pointer'}
-            {...register('priority')}
-          >
-            <option value="low">Low</option>
-            <option value="medium">Medium</option>
-            <option value="high">High</option>
-            <option value="urgent">Urgent</option>
-          </select>
-        </div>
-        <div>
-          <label className={labelClasses}>
-            Attachment <span className="text-[var(--color-text-muted)] text-xs">(optional)</span>
-          </label>
+      {/* Attachment */}
+      <div>
+        <label className={labelClasses}>
+          Attachment <span className="text-[var(--color-text-muted)] text-xs">(optional)</span>
+        </label>
           {selectedFile ? (
             <div className="flex items-center gap-2 rounded-xl bg-white/5 border border-[var(--color-accent)]/30 px-4 py-3">
               <ImageIcon className="w-4 h-4 text-[var(--color-accent)] shrink-0" />
@@ -248,7 +230,6 @@ export function TicketForm() {
             className="sr-only"
             onChange={handleFileChange}
           />
-        </div>
       </div>
 
       {/* Image preview */}
