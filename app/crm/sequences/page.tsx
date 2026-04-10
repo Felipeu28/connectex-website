@@ -1,9 +1,9 @@
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import { CRMShell } from '@/components/crm/CRMShell'
 import { createSupabaseBrowser } from '@/lib/supabase-browser'
-import { Plus, Play, Pause, Archive, ChevronDown, ChevronUp, Trash2, X, Users, Mail, Sparkles, Loader2, Pencil, UserPlus, CheckCircle } from 'lucide-react'
+import { Plus, Play, Pause, Archive, ChevronDown, ChevronUp, Trash2, X, Users, Mail, Sparkles, Loader2, Pencil, UserPlus, CheckCircle, Upload } from 'lucide-react'
 import { clsx } from 'clsx'
 
 interface SequenceStep {
@@ -42,6 +42,9 @@ export default function SequencesPage() {
   const [generating, setGenerating] = useState<number | null>(null)
   const [aiError, setAiError] = useState<string | null>(null)
   const [aiPrompt, setAiPrompt] = useState('')
+  const [seqDocContext, setSeqDocContext] = useState('')
+  const [seqDocFileName, setSeqDocFileName] = useState<string | null>(null)
+  const seqDocFileRef = useRef<HTMLInputElement>(null)
 
   // Enroll contacts state
   const [enrollSeq, setEnrollSeq] = useState<Sequence | null>(null)
@@ -122,9 +125,13 @@ export default function SequencesPage() {
     setAiError(null)
     try {
       const stepContext = steps[idx]
+      const docSection = seqDocContext.trim()
+        ? `\n\nReference document (extract key talking points):\n${seqDocContext.slice(0, 4000)}`
+        : ''
+
       const prompt = `Write a cold outreach / follow-up email for a technology advisor named Mark who helps SMBs in Austin, Texas find the right tech solutions. He's vendor-neutral and works with 600+ providers.
 
-Context: ${aiPrompt}
+Context: ${aiPrompt}${docSection}
 Step ${stepContext.step_number} of ${steps.length} (sent ${stepContext.delay_days} days after previous)
 
 Write a short, personal email (not salesy). Return JSON: {"subject": "...", "body": "..."}`
@@ -459,6 +466,42 @@ Write a short, personal email (not salesy). Return JSON: {"subject": "...", "bod
                   <Sparkles className="w-4 h-4 text-[#A78BFA]" />
                   <span className="text-sm font-medium text-white">AI Step Writer</span>
                   <span className="text-xs text-[var(--color-text-muted)]">— describe the campaign, then generate each step</span>
+                </div>
+                <div className="flex items-center gap-2 mb-2">
+                  <button
+                    type="button"
+                    onClick={() => seqDocFileRef.current?.click()}
+                    className="flex items-center gap-1.5 px-2.5 py-1.5 bg-white/5 border border-white/10 rounded-lg text-xs text-[var(--color-text-muted)] hover:text-white hover:bg-white/10 transition-colors"
+                  >
+                    <Upload className="w-3.5 h-3.5" />
+                    Attach doc
+                  </button>
+                  {seqDocFileName ? (
+                    <span className="text-xs text-[#A78BFA] flex items-center gap-1">
+                      {seqDocFileName}
+                      <button
+                        type="button"
+                        onClick={() => { setSeqDocContext(''); setSeqDocFileName(null); if (seqDocFileRef.current) seqDocFileRef.current.value = '' }}
+                        className="text-[var(--color-text-faint)] hover:text-[#FF6B6B]"
+                      >
+                        <X className="w-3 h-3" />
+                      </button>
+                    </span>
+                  ) : (
+                    <span className="text-xs text-[var(--color-text-faint)]">Optional: attach vendor doc to ground email content</span>
+                  )}
+                  <input
+                    ref={seqDocFileRef}
+                    type="file"
+                    accept=".txt,.md,text/plain,text/markdown"
+                    className="hidden"
+                    onChange={async (e) => {
+                      const file = e.target.files?.[0]
+                      if (!file) return
+                      setSeqDocFileName(file.name)
+                      setSeqDocContext(await file.text())
+                    }}
+                  />
                 </div>
                 <input
                   value={aiPrompt}

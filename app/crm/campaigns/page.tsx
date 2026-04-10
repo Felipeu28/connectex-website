@@ -1,10 +1,10 @@
 'use client'
 
-import { useEffect, useState, useCallback } from 'react'
+import { useEffect, useState, useCallback, useRef } from 'react'
 import { CRMShell } from '@/components/crm/CRMShell'
 import { createSupabaseBrowser } from '@/lib/supabase-browser'
 import { PIPELINE_STAGES, type Campaign, type PipelineStage } from '@/lib/crm-types'
-import { Plus, Sparkles, Pencil, Trash2, X, Eye, Send, Users, Filter, Loader2, CheckCircle2, AlertCircle, Search, Clock, UserCheck } from 'lucide-react'
+import { Plus, Sparkles, Pencil, Trash2, X, Eye, Send, Users, Filter, Loader2, CheckCircle2, AlertCircle, Search, Clock, UserCheck, Upload } from 'lucide-react'
 
 const STATUS_CONFIG: Record<string, { label: string; color: string }> = {
   draft: { label: 'Draft', color: '#94A3B8' },
@@ -33,6 +33,9 @@ export default function CampaignsPage() {
   const [aiPrompt, setAiPrompt] = useState('')
   const [generating, setGenerating] = useState(false)
   const [aiError, setAiError] = useState<string | null>(null)
+  const [docContext, setDocContext] = useState('')
+  const [docFileName, setDocFileName] = useState<string | null>(null)
+  const docFileRef = useRef<HTMLInputElement>(null)
 
   // Send modal state
   const [sendModalOpen, setSendModalOpen] = useState(false)
@@ -182,7 +185,7 @@ export default function CampaignsPage() {
       const res = await fetch('/api/crm/campaigns', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ action: 'generate', prompt: aiPrompt }),
+        body: JSON.stringify({ action: 'generate', prompt: aiPrompt, documentContext: docContext || undefined }),
       })
 
       const data = await res.json().catch(() => null)
@@ -411,10 +414,49 @@ export default function CampaignsPage() {
 
             {/* AI Generate */}
             <div className="mb-5 p-4 rounded-xl bg-gradient-to-br from-[#A78BFA]/10 to-[#00C9A7]/10 border border-white/10">
-              <div className="flex items-center gap-2 mb-2">
+              <div className="flex items-center gap-2 mb-3">
                 <Sparkles className="w-4 h-4 text-[#A78BFA]" />
                 <span className="text-sm font-medium text-white">AI Email Writer</span>
               </div>
+
+              {/* Document upload */}
+              <div className="flex items-center gap-2 mb-2">
+                <button
+                  type="button"
+                  onClick={() => docFileRef.current?.click()}
+                  className="flex items-center gap-1.5 px-2.5 py-1.5 bg-white/5 border border-white/10 rounded-lg text-xs text-[var(--color-text-muted)] hover:text-white hover:bg-white/10 transition-colors"
+                >
+                  <Upload className="w-3.5 h-3.5" />
+                  Upload doc
+                </button>
+                {docFileName ? (
+                  <span className="text-xs text-[#A78BFA] flex items-center gap-1">
+                    {docFileName}
+                    <button
+                      type="button"
+                      onClick={() => { setDocContext(''); setDocFileName(null); if (docFileRef.current) docFileRef.current.value = '' }}
+                      className="text-[var(--color-text-faint)] hover:text-[#FF6B6B]"
+                    >
+                      <X className="w-3 h-3" />
+                    </button>
+                  </span>
+                ) : (
+                  <span className="text-xs text-[var(--color-text-faint)]">Optional: attach a vendor slide deck or product sheet</span>
+                )}
+                <input
+                  ref={docFileRef}
+                  type="file"
+                  accept=".txt,.md,text/plain,text/markdown"
+                  className="hidden"
+                  onChange={async (e) => {
+                    const file = e.target.files?.[0]
+                    if (!file) return
+                    setDocFileName(file.name)
+                    setDocContext(await file.text())
+                  }}
+                />
+              </div>
+
               <div className="flex gap-2">
                 <input
                   type="text"
