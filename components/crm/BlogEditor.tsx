@@ -24,6 +24,7 @@ import {
   Plus,
   type LucideIcon,
 } from 'lucide-react'
+import { markdownToHtml } from '@/lib/markdown'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -68,26 +69,6 @@ function toSlug(title: string): string {
     .trim()
 }
 
-function markdownToHtml(md: string): string {
-  return md
-    .trim()
-    .replace(/^## (.+)$/gm, '<h2>$1</h2>')
-    .replace(/^### (.+)$/gm, '<h3>$1</h3>')
-    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-    .replace(/\*(.+?)\*/g, '<em>$1</em>')
-    .replace(/`(.+?)`/g, '<code>$1</code>')
-    .replace(/\[(.+?)\]\((.+?)\)/g, '<a href="$2">$1</a>')
-    .replace(/^- (.+)$/gm, '<li>$1</li>')
-    .replace(/^(\d+)\. (.+)$/gm, '<li>$2</li>')
-    .replace(/(<li>.*<\/li>\n?)+/gs, (m) => `<ul>${m}</ul>`)
-    .split('\n\n')
-    .map((block) => {
-      if (block.startsWith('<h') || block.startsWith('<ul')) return block
-      if (block.trim() === '') return ''
-      return `<p>${block.replace(/\n/g, ' ')}</p>`
-    })
-    .join('\n')
-}
 
 // ─── Main component ────────────────────────────────────────────────────────────
 

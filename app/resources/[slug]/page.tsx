@@ -6,6 +6,7 @@ import { Button } from '@/components/ui/Button'
 import { Badge } from '@/components/ui/Badge'
 import { breadcrumbSchema, blogPostSchema } from '@/lib/schema'
 import { createSupabaseServer } from '@/lib/supabase-server'
+import { markdownToHtml } from '@/lib/markdown'
 
 export const revalidate = 60
 export const dynamicParams = true
@@ -246,39 +247,3 @@ export default async function PostPage({
 }
 
 // Minimal markdown parser for the blog post content
-function markdownToHtml(md: string): string {
-  return md
-    .trim()
-    .replace(/^## (.+)$/gm, '<h2>$1</h2>')
-    .replace(/^### (.+)$/gm, '<h3>$1</h3>')
-    .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
-    .replace(/\*(.+?)\*/g, '<em>$1</em>')
-    .replace(/`(.+?)`/g, '<code>$1</code>')
-    .replace(/\[(.+?)\]\((.+?)\)/g, '<a href="$2">$1</a>')
-    .replace(/^- \[ \] (.+)$/gm, '<li><input type="checkbox" disabled> $1</li>')
-    .replace(/^- \[x\] (.+)$/gm, '<li><input type="checkbox" checked disabled> $1</li>')
-    .replace(/^- (.+)$/gm, '<li>$1</li>')
-    .replace(/^(\d+)\. (.+)$/gm, '<li>$2</li>')
-    .replace(/(<li>.*<\/li>\n?)+/gs, (m) => {
-      if (m.includes('type="checkbox"')) return `<ul class="checklist">${m}</ul>`
-      return `<ul>${m}</ul>`
-    })
-    .replace(/^\| (.+) \|$/gm, (_, row: string) => {
-      const cells = row.split(' | ').map((c: string) => c.trim())
-      return `<tr>${cells.map((c: string) => `<td>${c}</td>`).join('')}</tr>`
-    })
-    .replace(/^(\|[-: |]+\|)$/gm, '') // remove separator rows
-    .replace(/(<tr>.*<\/tr>\n?)+/gs, (m: string) => {
-      const rows = m.trim().split('\n')
-      const header = rows[0].replace(/<td>/g, '<th>').replace(/<\/td>/g, '</th>')
-      const body = rows.slice(1).join('\n')
-      return `<table><thead>${header}</thead><tbody>${body}</tbody></table>`
-    })
-    .split('\n\n')
-    .map((block) => {
-      if (block.startsWith('<h') || block.startsWith('<ul') || block.startsWith('<ol') || block.startsWith('<table')) return block
-      if (block.trim() === '') return ''
-      return `<p>${block.replace(/\n/g, ' ')}</p>`
-    })
-    .join('\n')
-}
