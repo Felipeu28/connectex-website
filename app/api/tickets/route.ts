@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase'
 import { createClient as createAdminClient } from '@supabase/supabase-js'
 import { notifyClientTicketCreated } from '@/lib/ticket-notifications'
 import { runTriage } from '@/lib/ticket-triage'
+import { requireAdmin } from '@/lib/auth-guard'
 
 const PRIORITIES = ['low', 'medium', 'high', 'urgent'] as const
 
@@ -97,6 +98,9 @@ export async function POST(req: NextRequest) {
 }
 
 export async function GET(req: NextRequest) {
+  const { errorResponse } = await requireAdmin()
+  if (errorResponse) return errorResponse
+
   try {
     const { searchParams } = new URL(req.url)
     const status = searchParams.get('status')

@@ -1,8 +1,12 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { Resend } from 'resend'
 import { createSupabaseServer } from '@/lib/supabase-server'
+import { requireAdmin } from '@/lib/auth-guard'
 
 export async function POST(req: NextRequest) {
+  const { errorResponse } = await requireAdmin()
+  if (errorResponse) return errorResponse
+
   try {
     const { campaign_id, filter } = await req.json()
 

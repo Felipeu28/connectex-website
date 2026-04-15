@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { notifyClientStatusChange } from '@/lib/ticket-notifications'
+import { requireAdmin } from '@/lib/auth-guard'
 
 const VALID_STATUSES = ['open', 'in_progress', 'waiting', 'resolved', 'closed'] as const
 
@@ -16,6 +17,9 @@ interface RouteContext {
 }
 
 export async function PATCH(req: NextRequest, context: RouteContext) {
+  const { errorResponse } = await requireAdmin()
+  if (errorResponse) return errorResponse
+
   try {
     const { id } = await context.params
     const { status } = await req.json()

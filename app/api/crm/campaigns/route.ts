@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { callGeminiJSON, GEMINI_PRO } from '@/lib/gemini'
+import { requireAdmin } from '@/lib/auth-guard'
 
 export async function POST(req: NextRequest) {
+  const { errorResponse } = await requireAdmin()
+  if (errorResponse) return errorResponse
+
   try {
     const { action, prompt } = await req.json()
 

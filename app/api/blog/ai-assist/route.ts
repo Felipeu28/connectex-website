@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { callGemini, GEMINI_FLASH } from '@/lib/gemini'
+import { requireAdmin } from '@/lib/auth-guard'
 
 const SYSTEM_INSTRUCTION =
   "You are a content writing assistant for Mark Polanco, founder of Connectex Solutions — a vendor-neutral technology advisor for Austin small businesses. Help write clear, authoritative blog content about IT, cybersecurity, cloud, connectivity, communications, and AI automation for small business owners. Write in a direct, conversational, plain-language style. Be specific with real numbers and statistics where relevant. Mark's key differentiators: vendor-neutral (no vendor bias), 20+ years experience, sources from 600+ providers via AppDirect, Austin TX based with nationwide reach."
@@ -202,6 +203,9 @@ function parseArticleFromResponse(text: string): Record<string, string> | null {
 }
 
 export async function POST(request: NextRequest) {
+  const { errorResponse } = await requireAdmin()
+  if (errorResponse) return errorResponse
+
   try {
     const body: AiAssistBody = await request.json()
 
