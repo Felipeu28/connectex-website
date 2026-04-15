@@ -64,15 +64,16 @@ export default function CampaignsPage() {
     })()
   }, [load])
 
-  // Fetch recipient count when filter changes
-  useEffect(() => {
-    if (!sendModalOpen) return
+  // Specific-contacts count is purely derivable — no effect needed.
+  const isSpecificIds = recipientFilter !== 'all' && 'ids' in recipientFilter
+  const displayRecipientCount = isSpecificIds
+    ? (recipientFilter as { ids: string[] }).ids.length
+    : recipientCount
 
-    // For specific-contacts mode, count is just the selected set
-    if (recipientFilter !== 'all' && 'ids' in recipientFilter) {
-      setRecipientCount(recipientFilter.ids.length)
-      return
-    }
+  // Only query the DB for 'all' / 'stage' filters. For the ids case the count
+  // is derived above, so we skip the effect entirely.
+  useEffect(() => {
+    if (!sendModalOpen || isSpecificIds) return
 
     ;(async () => {
       setLoadingCount(true)
@@ -91,22 +92,24 @@ export default function CampaignsPage() {
       setRecipientCount(count ?? 0)
       setLoadingCount(false)
     })()
-  }, [sendModalOpen, recipientFilter])
+  }, [sendModalOpen, recipientFilter, isSpecificIds])
 
-  // Contact search (debounced)
+  // Contact search (debounced). All setState happens inside the async
+  // timeout callback — not synchronously in the effect body.
   useEffect(() => {
-    if (!contactSearch.trim()) {
-      setContactSearchResults([])
-      return
-    }
+    const query = contactSearch.trim()
     const timer = setTimeout(async () => {
+      if (!query) {
+        setContactSearchResults([])
+        return
+      }
       setSearchingContacts(true)
       const supabase = createSupabaseBrowser()
       const { data } = await supabase
         .from('crm_contacts')
         .select('id, name, email, company')
         .not('email', 'is', null)
-        .or(`name.ilike.%${contactSearch}%,email.ilike.%${contactSearch}%,company.ilike.%${contactSearch}%`)
+        .or(`name.ilike.%${query}%,email.ilike.%${query}%,company.ilike.%${query}%`)
         .limit(10)
       setContactSearchResults(data ?? [])
       setSearchingContacts(false)
@@ -627,7 +630,7 @@ export default function CampaignsPage() {
                   {loadingCount ? (
                     <Loader2 className="w-4 h-4 animate-spin text-[var(--color-text-muted)]" />
                   ) : (
-                    <span className="text-sm font-semibold text-white">{recipientCount ?? '--'}</span>
+                    <span className="text-sm font-semibold text-white">{displayRecipientCount ?? '--'}</span>
                   )}
                 </div>
 
@@ -668,7 +671,7 @@ export default function CampaignsPage() {
                   </button>
                   <button
                     onClick={handleSend}
-                    disabled={sending || (!scheduleMode && (recipientCount === 0 || recipientCount === null)) || (scheduleMode && !scheduledAt)}
+                    disabled={sending || (!scheduleMode && (displayRecipientCount === 0 || displayRecipientCount === null)) || (scheduleMode && !scheduledAt)}
                     className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-semibold bg-[#00C9A7] hover:bg-[#00b394] text-[#0F1B2D] rounded-xl transition-colors disabled:opacity-50"
                   >
                     {sending ? (
@@ -684,7 +687,7 @@ export default function CampaignsPage() {
                     ) : (
                       <>
                         <Send className="w-4 h-4" />
-                        Send to {recipientCount ?? 0} contact{recipientCount !== 1 ? 's' : ''}
+                        Send to {displayRecipientCount ?? 0} contact{displayRecipientCount !== 1 ? 's' : ''}
                       </>
                     )}
                   </button>

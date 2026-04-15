@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { CRMShell } from '@/components/crm/CRMShell'
 import { createSupabaseBrowser } from '@/lib/supabase-browser'
 import { Plus, Play, Pause, Archive, ChevronDown, ChevronUp, Trash2, X, Users, Mail, Sparkles, Loader2, Pencil, UserPlus, CheckCircle } from 'lucide-react'
@@ -50,9 +50,7 @@ export default function SequencesPage() {
   const [enrolling, setEnrolling] = useState(false)
   const [enrollDone, setEnrollDone] = useState<{ enrolled: number; skipped: number } | null>(null)
 
-  useEffect(() => { load() }, [])
-
-  async function load() {
+  const load = useCallback(async () => {
     const supabase = createSupabaseBrowser()
     const { data: seqs } = await supabase
       .from('crm_sequences')
@@ -73,7 +71,11 @@ export default function SequencesPage() {
 
     setSequences(enriched)
     setLoading(false)
-  }
+  }, [])
+
+  useEffect(() => {
+    ;(async () => { await load() })()
+  }, [load])
 
   function openNew() {
     setEditSeq(null)
@@ -168,20 +170,22 @@ Write a short, personal email (not salesy). Return JSON: {"subject": "...", "bod
     load()
   }
 
-  // Enroll contacts search (debounced)
+  // Enroll contacts search (debounced). All setState happens in the async
+  // timeout callback so the lint rule (set-state-in-effect) is satisfied.
   useEffect(() => {
-    if (!enrollSearch.trim()) {
-      setEnrollResults([])
-      return
-    }
+    const query = enrollSearch.trim()
     const timer = setTimeout(async () => {
+      if (!query) {
+        setEnrollResults([])
+        return
+      }
       setEnrollSearching(true)
       const supabase = createSupabaseBrowser()
       const { data } = await supabase
         .from('crm_contacts')
         .select('id, name, email, company')
         .not('email', 'is', null)
-        .or(`name.ilike.%${enrollSearch}%,email.ilike.%${enrollSearch}%,company.ilike.%${enrollSearch}%`)
+        .or(`name.ilike.%${query}%,email.ilike.%${query}%,company.ilike.%${query}%`)
         .limit(10)
       setEnrollResults(data ?? [])
       setEnrollSearching(false)
