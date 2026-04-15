@@ -38,7 +38,9 @@ export default function SequencesPage() {
     { step_number: 1, delay_days: 0, subject: '', body: '' },
   ])
   const [saving, setSaving] = useState(false)
+  const [saveError, setSaveError] = useState<string | null>(null)
   const [generating, setGenerating] = useState<number | null>(null)
+  const [aiError, setAiError] = useState<string | null>(null)
   const [aiPrompt, setAiPrompt] = useState('')
 
   // Enroll contacts state
@@ -83,6 +85,8 @@ export default function SequencesPage() {
     setSeqDesc('')
     setSteps([{ step_number: 1, delay_days: 0, subject: '', body: '' }])
     setAiPrompt('')
+    setAiError(null)
+    setSaveError(null)
     setEditorOpen(true)
   }
 
@@ -92,6 +96,8 @@ export default function SequencesPage() {
     setSeqDesc(seq.description ?? '')
     setSteps(seq.steps?.length ? seq.steps.map(s => ({ ...s })) : [{ step_number: 1, delay_days: 0, subject: '', body: '' }])
     setAiPrompt('')
+    setAiError(null)
+    setSaveError(null)
     setEditorOpen(true)
   }
 
@@ -113,6 +119,7 @@ export default function SequencesPage() {
   async function generateStepWithAI(idx: number) {
     if (!aiPrompt.trim()) return
     setGenerating(idx)
+    setAiError(null)
     try {
       const stepContext = steps[idx]
       const prompt = `Write a cold outreach / follow-up email for a technology advisor named Mark who helps SMBs in Austin, Texas find the right tech solutions. He's vendor-neutral and works with 600+ providers.
@@ -127,11 +134,18 @@ Write a short, personal email (not salesy). Return JSON: {"subject": "...", "bod
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ prompt }),
       })
-      const data = await res.json()
-      if (data.subject) updateStep(idx, 'subject', data.subject)
-      if (data.body) updateStep(idx, 'body', data.body)
-    } catch {
-      // fail silently
+      const data = await res.json().catch(() => null)
+
+      if (!res.ok) {
+        setAiError(data?.error ?? `AI generation failed (${res.status})`)
+      } else if (data) {
+        if (data.subject) updateStep(idx, 'subject', data.subject)
+        if (data.body) updateStep(idx, 'body', data.body)
+      } else {
+        setAiError('AI generation returned an empty response.')
+      }
+    } catch (err) {
+      setAiError(err instanceof Error ? err.message : 'Network error contacting AI.')
     }
     setGenerating(null)
   }
@@ -139,22 +153,46 @@ Write a short, personal email (not salesy). Return JSON: {"subject": "...", "bod
   async function saveSequence() {
     if (!seqName.trim() || steps.some(s => !s.subject.trim() || !s.body.trim())) return
     setSaving(true)
+    setSaveError(null)
     const supabase = createSupabaseBrowser()
 
-    if (editSeq) {
-      await supabase.from('crm_sequences').update({ name: seqName, description: seqDesc || null, updated_at: new Date().toISOString() }).eq('id', editSeq.id)
-      await supabase.from('crm_sequence_steps').delete().eq('sequence_id', editSeq.id)
-      await supabase.from('crm_sequence_steps').insert(steps.map(s => ({ ...s, id: undefined, sequence_id: editSeq.id })))
-    } else {
-      const { data: seq } = await supabase.from('crm_sequences').insert({ name: seqName, description: seqDesc || null }).select('id').single()
-      if (seq) {
-        await supabase.from('crm_sequence_steps').insert(steps.map(s => ({ ...s, id: undefined, sequence_id: seq.id })))
-      }
-    }
+    try {
+      if (editSeq) {
+        const r1 = await supabase
+          .from('crm_sequences')
+          .update({ name: seqName, description: seqDesc || null, updated_at: new Date().toISOString() })
+          .eq('id', editSeq.id)
+        if (r1.error) throw r1.error
 
-    setSaving(false)
-    setEditorOpen(false)
-    load()
+        const r2 = await supabase.from('crm_sequence_steps').delete().eq('sequence_id', editSeq.id)
+        if (r2.error) throw r2.error
+
+        const r3 = await supabase
+          .from('crm_sequence_steps')
+          .insert(steps.map(s => ({ ...s, id: undefined, sequence_id: editSeq.id })))
+        if (r3.error) throw r3.error
+      } else {
+        const { data: seq, error: seqErr } = await supabase
+          .from('crm_sequences')
+          .insert({ name: seqName, description: seqDesc || null })
+          .select('id')
+          .single()
+        if (seqErr) throw seqErr
+        if (!seq) throw new Error('Sequence insert returned no row (likely RLS blocked it).')
+
+        const r = await supabase
+          .from('crm_sequence_steps')
+          .insert(steps.map(s => ({ ...s, id: undefined, sequence_id: seq.id })))
+        if (r.error) throw r.error
+      }
+
+      setSaving(false)
+      setEditorOpen(false)
+      load()
+    } catch (err) {
+      setSaving(false)
+      setSaveError(err instanceof Error ? err.message : String(err))
+    }
   }
 
   async function toggleStatus(seq: Sequence) {
@@ -428,6 +466,9 @@ Write a short, personal email (not salesy). Return JSON: {"subject": "...", "bod
                   placeholder="e.g., Following up after free vulnerability scan for Austin dental office"
                   className="w-full px-3 py-2 bg-white/5 border border-white/10 rounded-lg text-white placeholder:text-[var(--color-text-faint)] focus:outline-none focus:ring-2 focus:ring-[#A78BFA] text-sm"
                 />
+                {aiError && (
+                  <p className="mt-2 text-xs text-[#FF6B6B] break-words">{aiError}</p>
+                )}
               </div>
 
               {/* Steps */}
@@ -509,6 +550,12 @@ Write a short, personal email (not salesy). Return JSON: {"subject": "...", "bod
 
               <p className="text-xs text-[var(--color-text-faint)]">Use <code className="bg-white/10 px-1 rounded">{'{{name}}'}</code> to personalize with the contact&apos;s first name.</p>
             </div>
+
+            {saveError && (
+              <div className="mx-5 mb-3 p-3 rounded-xl bg-[#FF6B6B]/10 border border-[#FF6B6B]/30 text-sm text-[#FF6B6B] break-words">
+                Couldn&apos;t save sequence: {saveError}
+              </div>
+            )}
 
             <div className="sticky bottom-0 flex items-center justify-end gap-3 p-5 pt-4 border-t border-white/8 bg-[#0F1B2D]/95 backdrop-blur-xl">
               <button onClick={() => setEditorOpen(false)} className="px-4 py-2.5 text-sm font-medium text-[var(--color-text-muted)] hover:text-white rounded-xl hover:bg-white/5 transition-colors">

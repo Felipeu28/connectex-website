@@ -45,11 +45,19 @@ Use the contact context above to make this email feel like Mark wrote it persona
       maxOutputTokens: 1024,
     })
 
-    if (!result) {
-      return NextResponse.json({ error: 'AI generation failed' }, { status: 502 })
+    if (!result.ok) {
+      // Map Gemini's failure kind to an HTTP status the client can act on.
+      const status =
+        result.failureKind === 'no_key' ? 503 :
+        result.failureKind === 'blocked' ? 422 :
+        502
+      return NextResponse.json(
+        { error: result.error, failureKind: result.failureKind },
+        { status }
+      )
     }
 
-    return NextResponse.json(result)
+    return NextResponse.json(result.data)
   } catch (err) {
     console.error('AI generate error:', err)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })

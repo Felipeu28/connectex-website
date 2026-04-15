@@ -29,8 +29,10 @@ export default function CampaignsPage() {
   const [subject, setSubject] = useState('')
   const [body, setBody] = useState('')
   const [saving, setSaving] = useState(false)
+  const [saveError, setSaveError] = useState<string | null>(null)
   const [aiPrompt, setAiPrompt] = useState('')
   const [generating, setGenerating] = useState(false)
+  const [aiError, setAiError] = useState<string | null>(null)
 
   // Send modal state
   const [sendModalOpen, setSendModalOpen] = useState(false)
@@ -130,12 +132,15 @@ export default function CampaignsPage() {
       setBody('')
     }
     setAiPrompt('')
+    setAiError(null)
+    setSaveError(null)
     setEditorOpen(true)
   }
 
   async function saveCampaign() {
     if (!name.trim() || !subject.trim() || !body.trim()) return
     setSaving(true)
+    setSaveError(null)
     const supabase = createSupabaseBrowser()
 
     const payload = {
@@ -146,13 +151,17 @@ export default function CampaignsPage() {
       updated_at: new Date().toISOString(),
     }
 
-    if (editCampaign) {
-      await supabase.from('crm_campaigns').update(payload).eq('id', editCampaign.id)
-    } else {
-      await supabase.from('crm_campaigns').insert(payload)
-    }
+    const { error } = editCampaign
+      ? await supabase.from('crm_campaigns').update(payload).eq('id', editCampaign.id)
+      : await supabase.from('crm_campaigns').insert(payload)
 
     setSaving(false)
+
+    if (error) {
+      setSaveError(error.message)
+      return
+    }
+
     setEditorOpen(false)
     load()
   }
@@ -167,6 +176,7 @@ export default function CampaignsPage() {
   async function generateWithAI() {
     if (!aiPrompt.trim()) return
     setGenerating(true)
+    setAiError(null)
 
     try {
       const res = await fetch('/api/crm/campaigns', {
@@ -175,14 +185,19 @@ export default function CampaignsPage() {
         body: JSON.stringify({ action: 'generate', prompt: aiPrompt }),
       })
 
-      if (res.ok) {
-        const data = await res.json()
+      const data = await res.json().catch(() => null)
+
+      if (!res.ok) {
+        setAiError(data?.error ?? `AI generation failed (${res.status})`)
+      } else if (data) {
         if (data.subject) setSubject(data.subject)
         if (data.body) setBody(data.body)
         if (data.name && !name) setName(data.name)
+      } else {
+        setAiError('AI generation returned an empty response.')
       }
-    } catch {
-      // AI generation failed — user can still write manually
+    } catch (err) {
+      setAiError(err instanceof Error ? err.message : 'Network error contacting AI.')
     }
 
     setGenerating(false)
@@ -422,6 +437,12 @@ export default function CampaignsPage() {
                   Generate
                 </button>
               </div>
+              {aiError && (
+                <p className="mt-2 text-xs text-[#FF6B6B] flex items-start gap-1.5">
+                  <AlertCircle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
+                  <span className="break-words">{aiError}</span>
+                </p>
+              )}
             </div>
 
             <div className="space-y-4">
@@ -457,6 +478,13 @@ export default function CampaignsPage() {
                 />
               </div>
             </div>
+
+            {saveError && (
+              <div className="mt-4 p-3 rounded-xl bg-[#FF6B6B]/10 border border-[#FF6B6B]/30 text-sm text-[#FF6B6B] flex items-start gap-2">
+                <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                <span className="break-words">Couldn&apos;t save: {saveError}</span>
+              </div>
+            )}
 
             <div className="flex items-center justify-end gap-3 pt-4">
               <button onClick={() => setEditorOpen(false)} className="px-4 py-2.5 text-sm font-medium text-[var(--color-text-muted)] hover:text-white rounded-xl hover:bg-white/5 transition-colors">

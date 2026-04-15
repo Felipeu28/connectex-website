@@ -64,6 +64,7 @@ export default function ContactDetailPage({ params }: { params: Promise<{ id: st
   const [actionSubject, setActionSubject] = useState('')
   const [submittingAction, setSubmittingAction] = useState(false)
   const [generatingEmail, setGeneratingEmail] = useState(false)
+  const [emailAiError, setEmailAiError] = useState<string | null>(null)
 
   const loadSequences = useCallback(async () => {
     const supabase = createSupabaseBrowser()
@@ -152,6 +153,7 @@ export default function ContactDetailPage({ params }: { params: Promise<{ id: st
   async function generateEmailWithContext() {
     if (!contact) return
     setGeneratingEmail(true)
+    setEmailAiError(null)
     try {
       const res = await fetch('/api/crm/ai-generate', {
         method: 'POST',
@@ -167,10 +169,19 @@ export default function ContactDetailPage({ params }: { params: Promise<{ id: st
           },
         }),
       })
-      const data = await res.json()
-      if (data.subject && !actionSubject) setActionSubject(data.subject)
-      if (data.body) setActionText(data.body)
-    } catch { /* fail silently */ }
+      const data = await res.json().catch(() => null)
+
+      if (!res.ok) {
+        setEmailAiError(data?.error ?? `AI generation failed (${res.status})`)
+      } else if (data) {
+        if (data.subject && !actionSubject) setActionSubject(data.subject)
+        if (data.body) setActionText(data.body)
+      } else {
+        setEmailAiError('AI generation returned an empty response.')
+      }
+    } catch (err) {
+      setEmailAiError(err instanceof Error ? err.message : 'Network error contacting AI.')
+    }
     setGeneratingEmail(false)
   }
 
@@ -316,6 +327,9 @@ export default function ContactDetailPage({ params }: { params: Promise<{ id: st
                     </button>
                   )}
                 </div>
+              )}
+              {emailAiError && (
+                <p className="text-xs text-[#FF6B6B] break-words">{emailAiError}</p>
               )}
               <div className="flex gap-2">
                 <textarea
