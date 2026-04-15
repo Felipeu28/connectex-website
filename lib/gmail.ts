@@ -1,26 +1,25 @@
 import { google } from 'googleapis'
+import type { OAuth2Client } from 'google-auth-library'
+import { getAuthedClient } from '@/lib/google-tokens'
 
-function getOAuth2Client(tokens: { access_token: string; refresh_token: string }) {
-  const client = new google.auth.OAuth2(
-    process.env.GOOGLE_CLIENT_ID,
-    process.env.GOOGLE_CLIENT_SECRET,
-    `${(process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000').trim()}/api/google/callback`
-  )
-  client.setCredentials(tokens)
-  return client
-}
-
-/** Send an email via Gmail API using Mark's connected account */
+/**
+ * Send an email via Gmail using the connected Google account.
+ *
+ * If `auth` is not supplied, tokens are loaded from the DB via
+ * `getAuthedClient()` (which also wires up auto-refresh-and-save). This is
+ * what cron jobs use, since they have no cookie / no caller-provided auth.
+ */
 export async function sendGmail(
-  tokens: { access_token: string; refresh_token: string },
   to: string,
   subject: string,
-  body: string
+  body: string,
+  auth?: OAuth2Client | null
 ): Promise<string | null> {
-  const auth = getOAuth2Client(tokens)
-  const gmail = google.gmail({ version: 'v1', auth })
+  const client = auth ?? (await getAuthedClient())
+  if (!client) throw new Error('Google account not connected')
 
-  // Build RFC 2822 message
+  const gmail = google.gmail({ version: 'v1', auth: client })
+
   const message = [
     `To: ${to}`,
     `Subject: ${subject}`,
@@ -30,8 +29,11 @@ export async function sendGmail(
     body,
   ].join('\r\n')
 
-  // Base64url encode
-  const encoded = Buffer.from(message).toString('base64').replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
+  const encoded = Buffer.from(message)
+    .toString('base64')
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+    .replace(/=+$/, '')
 
   const res = await gmail.users.messages.send({
     userId: 'me',
@@ -41,10 +43,13 @@ export async function sendGmail(
   return res.data.id ?? null
 }
 
-/** Get the connected Gmail address */
-export async function getGmailProfile(tokens: { access_token: string; refresh_token: string }) {
-  const auth = getOAuth2Client(tokens)
-  const gmail = google.gmail({ version: 'v1', auth })
+/** Get the connected Gmail address (used to display the linked account in the UI). */
+export async function getGmailProfile(
+  auth?: OAuth2Client | null
+): Promise<string | null> {
+  const client = auth ?? (await getAuthedClient())
+  if (!client) return null
+  const gmail = google.gmail({ version: 'v1', auth: client })
   const res = await gmail.users.getProfile({ userId: 'me' })
   return res.data.emailAddress ?? null
 }

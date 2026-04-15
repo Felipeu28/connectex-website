@@ -1,4 +1,6 @@
 import { google, calendar_v3 } from 'googleapis'
+import type { OAuth2Client } from 'google-auth-library'
+import { getAuthedClient, getOAuthClientForConsent } from '@/lib/google-tokens'
 
 const SCOPES = [
   'https://www.googleapis.com/auth/calendar',
@@ -6,17 +8,9 @@ const SCOPES = [
   'https://www.googleapis.com/auth/gmail.readonly',
 ]
 
-function getOAuth2Client() {
-  return new google.auth.OAuth2(
-    process.env.GOOGLE_CLIENT_ID,
-    process.env.GOOGLE_CLIENT_SECRET,
-    `${(process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000').trim()}/api/google/callback`
-  )
-}
-
 /** Generate the Google OAuth consent URL */
 export function getAuthUrl() {
-  const client = getOAuth2Client()
+  const client = getOAuthClientForConsent()
   return client.generateAuthUrl({
     access_type: 'offline',
     prompt: 'consent',
@@ -26,30 +20,29 @@ export function getAuthUrl() {
 
 /** Exchange an auth code for tokens */
 export async function getTokensFromCode(code: string) {
-  const client = getOAuth2Client()
+  const client = getOAuthClientForConsent()
   const { tokens } = await client.getToken(code)
   return tokens
 }
 
-/** Get an authenticated Calendar client from stored tokens */
-function getCalendarClient(tokens: { access_token: string; refresh_token: string }) {
-  const client = getOAuth2Client()
-  client.setCredentials(tokens)
+async function getCalendar(auth?: OAuth2Client | null) {
+  const client = auth ?? (await getAuthedClient())
+  if (!client) throw new Error('Google account not connected')
   return google.calendar({ version: 'v3', auth: client })
 }
 
 /** Create a Google Calendar event and return the Google event ID */
 export async function createGoogleEvent(
-  tokens: { access_token: string; refresh_token: string },
   event: {
     title: string
     description?: string | null
     start_time: string
     end_time: string
     location?: string | null
-  }
+  },
+  auth?: OAuth2Client | null
 ): Promise<string | null> {
-  const calendar = getCalendarClient(tokens)
+  const calendar = await getCalendar(auth)
 
   const body: calendar_v3.Schema$Event = {
     summary: event.title,
@@ -75,7 +68,6 @@ export async function createGoogleEvent(
 
 /** Update a Google Calendar event */
 export async function updateGoogleEvent(
-  tokens: { access_token: string; refresh_token: string },
   googleEventId: string,
   event: {
     title: string
@@ -83,9 +75,10 @@ export async function updateGoogleEvent(
     start_time: string
     end_time: string
     location?: string | null
-  }
+  },
+  auth?: OAuth2Client | null
 ): Promise<void> {
-  const calendar = getCalendarClient(tokens)
+  const calendar = await getCalendar(auth)
 
   await calendar.events.update({
     calendarId: 'primary',
@@ -108,10 +101,10 @@ export async function updateGoogleEvent(
 
 /** Delete a Google Calendar event */
 export async function deleteGoogleEvent(
-  tokens: { access_token: string; refresh_token: string },
-  googleEventId: string
+  googleEventId: string,
+  auth?: OAuth2Client | null
 ): Promise<void> {
-  const calendar = getCalendarClient(tokens)
+  const calendar = await getCalendar(auth)
 
   await calendar.events.delete({
     calendarId: 'primary',
@@ -121,11 +114,11 @@ export async function deleteGoogleEvent(
 
 /** Fetch events from Google Calendar for a date range */
 export async function listGoogleEvents(
-  tokens: { access_token: string; refresh_token: string },
   timeMin: string,
-  timeMax: string
+  timeMax: string,
+  auth?: OAuth2Client | null
 ) {
-  const calendar = getCalendarClient(tokens)
+  const calendar = await getCalendar(auth)
 
   const res = await calendar.events.list({
     calendarId: 'primary',

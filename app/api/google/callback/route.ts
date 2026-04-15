@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { getTokensFromCode } from '@/lib/google-calendar'
-import { cookies } from 'next/headers'
+import { saveTokens } from '@/lib/google-tokens'
+import { getGmailProfile } from '@/lib/gmail'
+import { google } from 'googleapis'
 
 export async function GET(request: NextRequest) {
   const code = request.nextUrl.searchParams.get('code')
@@ -11,19 +13,31 @@ export async function GET(request: NextRequest) {
 
   try {
     const tokens = await getTokensFromCode(code)
+    if (!tokens.access_token || !tokens.refresh_token) {
+      // Google omits refresh_token if the user has consented before with no
+      // `prompt=consent`. Our consent URL forces prompt=consent, so this
+      // should be rare, but bail loudly if it happens.
+      return NextResponse.redirect(
+        new URL('/crm/calendar?error=missing_refresh_token', request.url)
+      )
+    }
 
-    // Store tokens in a secure httpOnly cookie
-    const cookieStore = await cookies()
-    cookieStore.set('google_tokens', JSON.stringify(tokens), {
-      httpOnly: true,
-      secure: process.env.NODE_ENV === 'production',
-      sameSite: 'lax',
-      path: '/',
-      maxAge: 60 * 60 * 24 * 365, // 1 year (refresh token handles expiry)
-    })
+    // Fetch the connected Gmail address up front so it's available to the
+    // dashboard without an extra round-trip later.
+    let email: string | null = null
+    try {
+      const oauth = new google.auth.OAuth2()
+      oauth.setCredentials(tokens)
+      email = await getGmailProfile(oauth)
+    } catch {
+      // Profile fetch is non-critical — proceed without email.
+    }
+
+    await saveTokens(tokens, email)
 
     return NextResponse.redirect(new URL('/crm/calendar?google=connected', request.url))
-  } catch {
+  } catch (err) {
+    console.error('Google OAuth callback failed:', err)
     return NextResponse.redirect(new URL('/crm/calendar?error=auth_failed', request.url))
   }
 }
