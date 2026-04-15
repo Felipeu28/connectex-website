@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase'
 import { createClient as createAdminClient } from '@supabase/supabase-js'
+import { createSupabaseServer } from '@/lib/supabase-server'
 import { notifyClientTicketCreated } from '@/lib/ticket-notifications'
 import { runTriage } from '@/lib/ticket-triage'
 
@@ -99,6 +100,13 @@ export async function POST(req: NextRequest) {
 
 export async function GET(req: NextRequest) {
   try {
+    // CRM-only endpoint — require authenticated session
+    const authClient = await createSupabaseServer()
+    const { data: { session } } = await authClient.auth.getSession()
+    if (!session) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
     const { searchParams } = new URL(req.url)
     const status = searchParams.get('status')
     const priority = searchParams.get('priority')
