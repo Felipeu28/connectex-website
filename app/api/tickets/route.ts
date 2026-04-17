@@ -112,10 +112,19 @@ export async function GET(req: NextRequest) {
       .order('created_at', { ascending: false })
       .range(offset, offset + limit - 1)
 
+    const VALID_STATUSES = ['open', 'in_progress', 'waiting', 'resolved', 'closed']
+    const VALID_PRIORITIES = ['low', 'medium', 'high', 'urgent']
+
     if (status) {
+      if (!VALID_STATUSES.includes(status)) {
+        return NextResponse.json({ error: 'Invalid status' }, { status: 400 })
+      }
       query = query.eq('status', status)
     }
     if (priority) {
+      if (!VALID_PRIORITIES.includes(priority)) {
+        return NextResponse.json({ error: 'Invalid priority' }, { status: 400 })
+      }
       query = query.eq('priority', priority)
     }
 
@@ -128,7 +137,7 @@ export async function GET(req: NextRequest) {
 
     return NextResponse.json({ tickets, total: count })
   } catch (err) {
-    console.error('Tickets list error:', err)
+    console.error('Ticket list error:', err)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
