@@ -5,9 +5,23 @@ import { useParams } from 'next/navigation'
 import { BlogEditor } from '@/components/crm/BlogEditor'
 import { CRMShell } from '@/components/crm/CRMShell'
 
+interface PostData {
+  id: string
+  slug: string
+  title: string
+  excerpt: string
+  body: string
+  category: string
+  read_time: string
+  featured: boolean
+  status: 'draft' | 'published'
+  meta_description: string
+  published_at: string | null
+}
+
 export default function EditPostPage() {
   const { id } = useParams<{ id: string }>()
-  const [post, setPost] = useState(null)
+  const [post, setPost] = useState<PostData | null>(null)
   const [loading, setLoading] = useState(true)
 
   useEffect(() => {

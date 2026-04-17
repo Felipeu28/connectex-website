@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { CRMShell } from '@/components/crm/CRMShell'
 import {
   PenLine,
@@ -11,33 +12,62 @@ import {
   BookOpen,
   CheckCircle2,
   Clock4,
-  Edit3,
+  Download,
 } from 'lucide-react'
+import { posts as staticPosts } from '@/data/posts'
 
 interface BlogPost {
-  id: string
+  id: string | null
   slug: string
   title: string
   category: string
   status: 'draft' | 'published'
   published_at: string | null
   created_at: string
+  updated_at?: string
   excerpt: string
+  read_time?: string
+  featured?: boolean
+  isStatic: boolean
 }
 
 type Filter = 'all' | 'published' | 'drafts'
 
 export default function BlogListPage() {
+  const router = useRouter()
   const [posts, setPosts] = useState<BlogPost[]>([])
   const [loading, setLoading] = useState(true)
   const [filter, setFilter] = useState<Filter>('all')
+  const [importing, setImporting] = useState<string | null>(null)
 
   async function fetchPosts() {
     setLoading(true)
     try {
       const res = await fetch('/api/blog?all=true')
       const data = await res.json()
-      setPosts(Array.isArray(data) ? data : [])
+      const supabasePosts: BlogPost[] = Array.isArray(data) ? data : []
+
+      const supabaseSlugs = new Set(supabasePosts.map((p: BlogPost) => p.slug))
+
+      // Build unified list: Supabase posts first (managed), then static-only
+      const staticOnly = staticPosts
+        .filter(sp => !supabaseSlugs.has(sp.slug))
+        .map(sp => ({
+          id: null,           // null = not yet in Supabase
+          slug: sp.slug,
+          title: sp.title,
+          excerpt: sp.excerpt,
+          category: sp.category,
+          read_time: sp.readTime,
+          featured: sp.featured,
+          status: 'published' as const,
+          published_at: sp.publishedAt,
+          created_at: sp.publishedAt,
+          updated_at: sp.publishedAt,
+          isStatic: true,     // flag for UI
+        }))
+
+      setPosts([...supabasePosts.map((p: BlogPost) => ({ ...p, isStatic: false })), ...staticOnly])
     } catch {
       setPosts([])
     } finally {
@@ -55,15 +85,37 @@ export default function BlogListPage() {
     fetchPosts()
   }
 
+  async function handleImport(slug: string) {
+    setImporting(slug)
+    try {
+      const res = await fetch('/api/blog/import-static', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ slug }),
+      })
+      const { post } = await res.json()
+      if (post?.id) {
+        // Replace the static entry with the newly imported Supabase post
+        router.push(`/crm/blog/${post.id}`)
+      }
+    } catch {
+      setImporting(null)
+    }
+  }
+
   const filtered = posts.filter((p) => {
     if (filter === 'published') return p.status === 'published'
     if (filter === 'drafts') return p.status === 'draft'
     return true
   })
 
+  // Stats: total = all posts (supabase + static-only), published includes static (all published),
+  // drafts = supabase drafts only
+  const supabasePosts = posts.filter(p => !p.isStatic)
+  const staticOnlyPosts = posts.filter(p => p.isStatic)
   const totalCount = posts.length
-  const publishedCount = posts.filter((p) => p.status === 'published').length
-  const draftCount = posts.filter((p) => p.status === 'draft').length
+  const publishedCount = supabasePosts.filter(p => p.status === 'published').length + staticOnlyPosts.length
+  const draftCount = supabasePosts.filter(p => p.status === 'draft').length
 
   const tabs: { key: Filter; label: string; count: number }[] = [
     { key: 'all', label: 'All', count: totalCount },
@@ -131,6 +183,17 @@ export default function BlogListPage() {
           </div>
         </div>
 
+        {/* Static posts info banner */}
+        {!loading && posts.some(p => p.isStatic) && (
+          <div className="glass rounded-xl px-4 py-3 border border-[#A78BFA]/20 flex items-center gap-3 text-sm">
+            <div className="w-2 h-2 rounded-full bg-[#A78BFA] flex-shrink-0" />
+            <p className="text-[var(--color-text-muted)]">
+              <span className="text-white font-medium">{posts.filter(p => p.isStatic).length} articles</span> were written before the CRM and are read-only until imported.{' '}
+              <span className="text-[#A78BFA]">Click &quot;Import &amp; Edit&quot; to bring them into the CRM.</span>
+            </p>
+          </div>
+        )}
+
         {/* Filter tabs */}
         <div className="flex gap-1 border-b border-white/8">
           {tabs.map((tab) => (
@@ -189,14 +252,18 @@ export default function BlogListPage() {
                   </tr>
                 ) : (
                   filtered.map((post) => (
-                    <tr key={post.id} className="border-b border-white/5 hover:bg-white/[0.03] transition-colors">
+                    <tr key={post.id ?? post.slug} className="border-b border-white/5 hover:bg-white/[0.03] transition-colors">
                       <td className="px-4 py-3">
-                        <Link
-                          href={`/crm/blog/${post.id}`}
-                          className="font-semibold text-white hover:text-[#00C9A7] transition-colors"
-                        >
-                          {post.title}
-                        </Link>
+                        {post.isStatic ? (
+                          <span className="font-semibold text-white">{post.title}</span>
+                        ) : (
+                          <Link
+                            href={`/crm/blog/${post.id}`}
+                            className="font-semibold text-white hover:text-[#00C9A7] transition-colors"
+                          >
+                            {post.title}
+                          </Link>
+                        )}
                         {post.excerpt && (
                           <p className="text-xs text-[var(--color-text-faint)] mt-0.5 line-clamp-1">{post.excerpt}</p>
                         )}
@@ -227,33 +294,56 @@ export default function BlogListPage() {
                         {formatDate(post.published_at ?? post.created_at)}
                       </td>
                       <td className="px-4 py-3 text-right">
-                        <div className="flex items-center justify-end gap-1">
-                          <Link
-                            href={`/crm/blog/${post.id}`}
-                            className="p-1.5 rounded-lg hover:bg-white/10 text-[var(--color-text-muted)] hover:text-white transition-colors"
-                            aria-label="Edit post"
-                          >
-                            <Edit3 className="w-3.5 h-3.5" />
-                          </Link>
-                          {post.slug && (
+                        {post.isStatic ? (
+                          // Static post — not yet in Supabase
+                          <div className="flex items-center gap-1.5">
+                            <span className="text-xs text-[var(--color-text-muted)] mr-1">Static</span>
+                            <button
+                              onClick={() => handleImport(post.slug)}
+                              disabled={importing === post.slug}
+                              className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-[#A78BFA]/15 text-[#A78BFA] hover:bg-[#A78BFA]/25 border border-[#A78BFA]/25 transition-colors disabled:opacity-50"
+                            >
+                              {importing === post.slug ? (
+                                <span className="w-3 h-3 border border-[#A78BFA] border-t-transparent rounded-full animate-spin" />
+                              ) : (
+                                <Download className="w-3 h-3" />
+                              )}
+                              Import &amp; Edit
+                            </button>
                             <a
                               href={`/resources/${post.slug}`}
                               target="_blank"
                               rel="noopener noreferrer"
-                              className="p-1.5 rounded-lg hover:bg-white/10 text-[var(--color-text-muted)] hover:text-white transition-colors"
-                              aria-label="View post"
+                              className="p-1.5 rounded-lg text-[var(--color-text-muted)] hover:text-white hover:bg-white/10 transition-colors"
                             >
                               <ExternalLink className="w-3.5 h-3.5" />
                             </a>
-                          )}
-                          <button
-                            onClick={() => handleDelete(post.id, post.title)}
-                            className="p-1.5 rounded-lg hover:bg-[#FF6B6B]/20 text-[var(--color-text-muted)] hover:text-[#FF6B6B] transition-colors"
-                            aria-label="Delete post"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                          </button>
-                        </div>
+                          </div>
+                        ) : (
+                          // Supabase-managed post — normal Edit/View/Delete buttons
+                          <div className="flex items-center gap-1.5">
+                            <Link
+                              href={`/crm/blog/${post.id}`}
+                              className="p-1.5 rounded-lg text-[var(--color-text-muted)] hover:text-white hover:bg-white/10 transition-colors"
+                            >
+                              <PenLine className="w-3.5 h-3.5" />
+                            </Link>
+                            <a
+                              href={`/resources/${post.slug}`}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="p-1.5 rounded-lg text-[var(--color-text-muted)] hover:text-white hover:bg-white/10 transition-colors"
+                            >
+                              <ExternalLink className="w-3.5 h-3.5" />
+                            </a>
+                            <button
+                              onClick={() => handleDelete(post.id!, post.title)}
+                              className="p-1.5 rounded-lg text-[var(--color-text-muted)] hover:text-[#FF6B6B] hover:bg-[#FF6B6B]/10 transition-colors"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                            </button>
+                          </div>
+                        )}
                       </td>
                     </tr>
                   ))

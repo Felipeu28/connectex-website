@@ -32,7 +32,7 @@ export async function generateMetadata({
       title: solution.title,
       description: solution.metaDescription,
       url,
-      type: 'article',
+      type: 'website',
       siteName: 'Connectex Solutions',
       images: [
         {
@@ -161,39 +161,163 @@ export default async function SolutionPage({
 
       {/* Features */}
       <SectionWrapper className="py-20 px-4 sm:px-6">
-        <div className="max-w-7xl mx-auto grid md:grid-cols-2 gap-16 items-start">
-          <div>
-            <h2 className="text-2xl sm:text-3xl font-bold text-[var(--text)] mb-8">What&rsquo;s included</h2>
-            <ul className="space-y-4">
-              {solution.features.map((feat, i) => (
-                <li key={i} className="flex items-start gap-3">
-                  <div
-                    className="w-6 h-6 rounded-lg flex items-center justify-center shrink-0 mt-0.5"
-                    style={{ background: `${solution.color}15`, border: `1px solid ${solution.color}30` }}
-                  >
-                    <Check className="w-3.5 h-3.5" style={{ color: solution.color }} strokeWidth={2.5} />
-                  </div>
-                  <span className="text-[var(--text-muted)] text-sm">{feat}</span>
-                </li>
-              ))}
-            </ul>
+        <div className="max-w-7xl mx-auto">
+          <div className="max-w-3xl mb-12">
+            <h2 className="text-2xl sm:text-3xl font-bold text-[var(--text)] mb-3">What&rsquo;s included</h2>
+            <p className="text-[var(--text-muted)]">
+              Everything you need to make an informed decision and get a solution that actually fits your business.
+            </p>
           </div>
-
-          <div>
-            <h2 className="text-2xl sm:text-3xl font-bold text-[var(--text)] mb-8">Who this is for</h2>
-            <ul className="space-y-4">
-              {solution.useCases.map((uc, i) => (
-                <li key={i} className="glass rounded-xl p-4 border border-white/8 text-sm text-[var(--text-muted)] flex items-start gap-3">
+          <div className="grid md:grid-cols-2 gap-5">
+            {solution.features.map((feat, i) => (
+              <div
+                key={i}
+                className="glass rounded-2xl p-6 border border-white/8 hover:border-white/15 transition-colors"
+              >
+                <div className="flex items-start gap-4">
                   <div
-                    className="w-6 h-6 rounded-lg flex items-center justify-center shrink-0 mt-0.5"
-                    style={{ background: `${solution.color}12`, border: `1px solid ${solution.color}25` }}
+                    className="w-10 h-10 rounded-xl flex items-center justify-center shrink-0"
+                    style={{
+                      background: `${solution.color}15`,
+                      border: `1px solid ${solution.color}30`,
+                    }}
                   >
-                    {Icon && <Icon className="w-3.5 h-3.5" style={{ color: solution.color }} strokeWidth={1.5} />}
+                    <Check
+                      className="w-5 h-5"
+                      style={{ color: solution.color }}
+                      strokeWidth={2.5}
+                    />
                   </div>
-                  {uc}
-                </li>
-              ))}
-            </ul>
+                  <div className="flex-1">
+                    <h3 className="font-semibold text-[var(--text)] mb-1.5">
+                      {feat.name}
+                    </h3>
+                    <p className="text-sm text-[var(--text-muted)] leading-relaxed">
+                      {feat.detail}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </SectionWrapper>
+
+      {/* How it works (process steps) */}
+      <SectionWrapper className="py-20 px-4 sm:px-6 bg-[#0a1520]">
+        <div className="max-w-5xl mx-auto">
+          <div className="text-center mb-14">
+            <h2 className="text-2xl sm:text-3xl font-bold text-[var(--text)] mb-3">
+              How it works
+            </h2>
+            <p className="text-[var(--text-muted)] max-w-2xl mx-auto">
+              A clear, low-pressure process. We start with data — not a sales pitch.
+            </p>
+          </div>
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-5">
+            {solution.processSteps.map((ps) => (
+              <div
+                key={ps.step}
+                className="glass rounded-2xl p-6 border border-white/8 relative"
+              >
+                <div
+                  className="absolute -top-3 -left-3 w-10 h-10 rounded-xl flex items-center justify-center font-bold text-sm"
+                  style={{
+                    background: solution.color,
+                    color: '#0a1218',
+                  }}
+                >
+                  {ps.step}
+                </div>
+                <h3 className="font-semibold text-[var(--text)] mb-2 mt-2">
+                  {ps.title}
+                </h3>
+                <p className="text-sm text-[var(--text-muted)] leading-relaxed">
+                  {ps.description}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </SectionWrapper>
+
+      {/* Who this is for */}
+      <SectionWrapper className="py-20 px-4 sm:px-6">
+        <div className="max-w-5xl mx-auto">
+          <div className="max-w-3xl mb-10">
+            <h2 className="text-2xl sm:text-3xl font-bold text-[var(--text)] mb-3">
+              Who this is for
+            </h2>
+            <p className="text-[var(--text-muted)]">
+              {solution.shortTitle} is the right fit if you match one of these profiles.
+            </p>
+          </div>
+          <div className="grid sm:grid-cols-2 gap-4">
+            {solution.useCases.map((uc, i) => (
+              <div
+                key={i}
+                className="glass rounded-xl p-5 border border-white/8 text-sm text-[var(--text-muted)] flex items-start gap-3"
+              >
+                <div
+                  className="w-7 h-7 rounded-lg flex items-center justify-center shrink-0"
+                  style={{
+                    background: `${solution.color}12`,
+                    border: `1px solid ${solution.color}25`,
+                  }}
+                >
+                  {Icon && (
+                    <Icon
+                      className="w-3.5 h-3.5"
+                      style={{ color: solution.color }}
+                      strokeWidth={1.5}
+                    />
+                  )}
+                </div>
+                <span className="flex-1 pt-0.5">{uc}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </SectionWrapper>
+
+      {/* Pricing callout */}
+      <SectionWrapper className="py-20 px-4 sm:px-6 bg-[#0a1520]">
+        <div className="max-w-4xl mx-auto">
+          <div
+            className="glass rounded-3xl p-8 sm:p-10 border"
+            style={{ borderColor: `${solution.color}25` }}
+          >
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
+              <div className="flex-1">
+                <p
+                  className="text-xs font-semibold uppercase tracking-wider mb-2"
+                  style={{ color: solution.color }}
+                >
+                  Typical investment
+                </p>
+                <p className="text-3xl sm:text-4xl font-bold text-[var(--text)] mb-3">
+                  {solution.pricing.summary}
+                </p>
+                <p className="text-sm text-[var(--text-muted)] leading-relaxed max-w-xl">
+                  {solution.pricing.note}
+                </p>
+              </div>
+              <div className="flex-shrink-0">
+                <Button variant="cta" size="lg" href="/contact">
+                  Get My Quote
+                </Button>
+              </div>
+            </div>
+            <div className="mt-6 pt-6 border-t border-white/8">
+              <p className="text-sm text-[var(--text-muted)] flex items-start gap-2">
+                <Check
+                  className="w-4 h-4 mt-0.5 shrink-0"
+                  style={{ color: solution.color }}
+                  strokeWidth={2.5}
+                />
+                {solution.ctaDetail}
+              </p>
+            </div>
           </div>
         </div>
       </SectionWrapper>
