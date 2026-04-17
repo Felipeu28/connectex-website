@@ -6,9 +6,15 @@ import { google } from 'googleapis'
 
 export async function GET(request: NextRequest) {
   const code = request.nextUrl.searchParams.get('code')
+  const returnedState = request.nextUrl.searchParams.get('state')
+  const storedState = request.cookies.get('oauth_state')?.value
 
   if (!code) {
     return NextResponse.redirect(new URL('/crm/calendar?error=no_code', request.url))
+  }
+
+  if (!storedState || !returnedState || storedState !== returnedState) {
+    return NextResponse.redirect(new URL('/crm/calendar?error=invalid_state', request.url))
   }
 
   try {
@@ -35,7 +41,9 @@ export async function GET(request: NextRequest) {
 
     await saveTokens(tokens, email)
 
-    return NextResponse.redirect(new URL('/crm/calendar?google=connected', request.url))
+    const successResponse = NextResponse.redirect(new URL('/crm/calendar?google=connected', request.url))
+    successResponse.cookies.delete('oauth_state')
+    return successResponse
   } catch (err) {
     console.error('Google OAuth callback failed:', err)
     return NextResponse.redirect(new URL('/crm/calendar?error=auth_failed', request.url))

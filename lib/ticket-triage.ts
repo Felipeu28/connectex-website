@@ -277,6 +277,9 @@ Analyze this ticket and respond with ONLY valid JSON in this exact format:
 
   if (ticket.image_url) {
     try {
+      const supabaseHost = new URL(process.env.NEXT_PUBLIC_SUPABASE_URL ?? 'https://invalid').host
+      const imageHost = new URL(ticket.image_url).host
+      if (imageHost !== supabaseHost) throw new Error('Blocked: non-Supabase image host')
       const imgRes = await fetch(ticket.image_url)
       if (imgRes.ok) {
         const contentType = imgRes.headers.get('content-type') ?? 'image/jpeg'
