@@ -1,14 +1,15 @@
 import { NextResponse } from 'next/server'
-import { cookies } from 'next/headers'
+import { getStoredTokens, clearTokens } from '@/lib/google-tokens'
 
 export async function GET() {
-  const cookieStore = await cookies()
-  const raw = cookieStore.get('google_tokens')?.value
-  return NextResponse.json({ connected: !!raw })
+  const tokens = await getStoredTokens()
+  return NextResponse.json({
+    connected: !!tokens,
+    email: tokens?.email ?? null,
+  })
 }
 
 export async function DELETE() {
-  const cookieStore = await cookies()
-  cookieStore.delete('google_tokens')
+  await clearTokens()
   return NextResponse.json({ connected: false })
 }

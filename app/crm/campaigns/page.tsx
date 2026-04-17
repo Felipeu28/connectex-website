@@ -29,8 +29,10 @@ export default function CampaignsPage() {
   const [subject, setSubject] = useState('')
   const [body, setBody] = useState('')
   const [saving, setSaving] = useState(false)
+  const [saveError, setSaveError] = useState<string | null>(null)
   const [aiPrompt, setAiPrompt] = useState('')
   const [generating, setGenerating] = useState(false)
+  const [aiError, setAiError] = useState<string | null>(null)
 
   // Send modal state
   const [sendModalOpen, setSendModalOpen] = useState(false)
@@ -64,15 +66,16 @@ export default function CampaignsPage() {
     })()
   }, [load])
 
-  // Fetch recipient count when filter changes
-  useEffect(() => {
-    if (!sendModalOpen) return
+  // Specific-contacts count is purely derivable — no effect needed.
+  const isSpecificIds = recipientFilter !== 'all' && 'ids' in recipientFilter
+  const displayRecipientCount = isSpecificIds
+    ? (recipientFilter as { ids: string[] }).ids.length
+    : recipientCount
 
-    // For specific-contacts mode, count is just the selected set
-    if (recipientFilter !== 'all' && 'ids' in recipientFilter) {
-      setRecipientCount(recipientFilter.ids.length)
-      return
-    }
+  // Only query the DB for 'all' / 'stage' filters. For the ids case the count
+  // is derived above, so we skip the effect entirely.
+  useEffect(() => {
+    if (!sendModalOpen || isSpecificIds) return
 
     ;(async () => {
       setLoadingCount(true)
@@ -91,22 +94,24 @@ export default function CampaignsPage() {
       setRecipientCount(count ?? 0)
       setLoadingCount(false)
     })()
-  }, [sendModalOpen, recipientFilter])
+  }, [sendModalOpen, recipientFilter, isSpecificIds])
 
-  // Contact search (debounced)
+  // Contact search (debounced). All setState happens inside the async
+  // timeout callback — not synchronously in the effect body.
   useEffect(() => {
-    if (!contactSearch.trim()) {
-      setContactSearchResults([])
-      return
-    }
+    const query = contactSearch.trim()
     const timer = setTimeout(async () => {
+      if (!query) {
+        setContactSearchResults([])
+        return
+      }
       setSearchingContacts(true)
       const supabase = createSupabaseBrowser()
       const { data } = await supabase
         .from('crm_contacts')
         .select('id, name, email, company')
         .not('email', 'is', null)
-        .or(`name.ilike.%${contactSearch}%,email.ilike.%${contactSearch}%,company.ilike.%${contactSearch}%`)
+        .or(`name.ilike.%${query}%,email.ilike.%${query}%,company.ilike.%${query}%`)
         .limit(10)
       setContactSearchResults(data ?? [])
       setSearchingContacts(false)
@@ -127,12 +132,15 @@ export default function CampaignsPage() {
       setBody('')
     }
     setAiPrompt('')
+    setAiError(null)
+    setSaveError(null)
     setEditorOpen(true)
   }
 
   async function saveCampaign() {
     if (!name.trim() || !subject.trim() || !body.trim()) return
     setSaving(true)
+    setSaveError(null)
     const supabase = createSupabaseBrowser()
 
     const payload = {
@@ -143,13 +151,17 @@ export default function CampaignsPage() {
       updated_at: new Date().toISOString(),
     }
 
-    if (editCampaign) {
-      await supabase.from('crm_campaigns').update(payload).eq('id', editCampaign.id)
-    } else {
-      await supabase.from('crm_campaigns').insert(payload)
-    }
+    const { error } = editCampaign
+      ? await supabase.from('crm_campaigns').update(payload).eq('id', editCampaign.id)
+      : await supabase.from('crm_campaigns').insert(payload)
 
     setSaving(false)
+
+    if (error) {
+      setSaveError(error.message)
+      return
+    }
+
     setEditorOpen(false)
     load()
   }
@@ -164,6 +176,7 @@ export default function CampaignsPage() {
   async function generateWithAI() {
     if (!aiPrompt.trim()) return
     setGenerating(true)
+    setAiError(null)
 
     try {
       const res = await fetch('/api/crm/campaigns', {
@@ -172,14 +185,19 @@ export default function CampaignsPage() {
         body: JSON.stringify({ action: 'generate', prompt: aiPrompt }),
       })
 
-      if (res.ok) {
-        const data = await res.json()
+      const data = await res.json().catch(() => null)
+
+      if (!res.ok) {
+        setAiError(data?.error ?? `AI generation failed (${res.status})`)
+      } else if (data) {
         if (data.subject) setSubject(data.subject)
         if (data.body) setBody(data.body)
         if (data.name && !name) setName(data.name)
+      } else {
+        setAiError('AI generation returned an empty response.')
       }
-    } catch {
-      // AI generation failed — user can still write manually
+    } catch (err) {
+      setAiError(err instanceof Error ? err.message : 'Network error contacting AI.')
     }
 
     setGenerating(false)
@@ -419,6 +437,12 @@ export default function CampaignsPage() {
                   Generate
                 </button>
               </div>
+              {aiError && (
+                <p className="mt-2 text-xs text-[#FF6B6B] flex items-start gap-1.5">
+                  <AlertCircle className="w-3.5 h-3.5 flex-shrink-0 mt-0.5" />
+                  <span className="break-words">{aiError}</span>
+                </p>
+              )}
             </div>
 
             <div className="space-y-4">
@@ -454,6 +478,13 @@ export default function CampaignsPage() {
                 />
               </div>
             </div>
+
+            {saveError && (
+              <div className="mt-4 p-3 rounded-xl bg-[#FF6B6B]/10 border border-[#FF6B6B]/30 text-sm text-[#FF6B6B] flex items-start gap-2">
+                <AlertCircle className="w-4 h-4 flex-shrink-0 mt-0.5" />
+                <span className="break-words">Couldn&apos;t save: {saveError}</span>
+              </div>
+            )}
 
             <div className="flex items-center justify-end gap-3 pt-4">
               <button onClick={() => setEditorOpen(false)} className="px-4 py-2.5 text-sm font-medium text-[var(--color-text-muted)] hover:text-white rounded-xl hover:bg-white/5 transition-colors">
@@ -627,7 +658,7 @@ export default function CampaignsPage() {
                   {loadingCount ? (
                     <Loader2 className="w-4 h-4 animate-spin text-[var(--color-text-muted)]" />
                   ) : (
-                    <span className="text-sm font-semibold text-white">{recipientCount ?? '--'}</span>
+                    <span className="text-sm font-semibold text-white">{displayRecipientCount ?? '--'}</span>
                   )}
                 </div>
 
@@ -668,7 +699,7 @@ export default function CampaignsPage() {
                   </button>
                   <button
                     onClick={handleSend}
-                    disabled={sending || (!scheduleMode && (recipientCount === 0 || recipientCount === null)) || (scheduleMode && !scheduledAt)}
+                    disabled={sending || (!scheduleMode && (displayRecipientCount === 0 || displayRecipientCount === null)) || (scheduleMode && !scheduledAt)}
                     className="inline-flex items-center gap-2 px-5 py-2.5 text-sm font-semibold bg-[#00C9A7] hover:bg-[#00b394] text-[#0F1B2D] rounded-xl transition-colors disabled:opacity-50"
                   >
                     {sending ? (
@@ -684,7 +715,7 @@ export default function CampaignsPage() {
                     ) : (
                       <>
                         <Send className="w-4 h-4" />
-                        Send to {recipientCount ?? 0} contact{recipientCount !== 1 ? 's' : ''}
+                        Send to {displayRecipientCount ?? 0} contact{displayRecipientCount !== 1 ? 's' : ''}
                       </>
                     )}
                   </button>

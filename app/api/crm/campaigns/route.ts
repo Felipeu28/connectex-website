@@ -32,11 +32,18 @@ Return ONLY a JSON object:
         temperature: 0.5,
       })
 
-      if (!result) {
-        return NextResponse.json({ error: 'AI generation failed' }, { status: 502 })
+      if (!result.ok) {
+        const status =
+          result.failureKind === 'no_key' ? 503 :
+          result.failureKind === 'blocked' ? 422 :
+          502
+        return NextResponse.json(
+          { error: result.error, failureKind: result.failureKind },
+          { status }
+        )
       }
 
-      return NextResponse.json(result)
+      return NextResponse.json(result.data)
     }
 
     return NextResponse.json({ error: 'Unknown action' }, { status: 400 })

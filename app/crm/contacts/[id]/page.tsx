@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, use } from 'react'
+import { useEffect, useState, use, useCallback } from 'react'
 import { CRMShell } from '@/components/crm/CRMShell'
 import { ContactModal } from '@/components/crm/ContactModal'
 import { DealModal } from '@/components/crm/DealModal'
@@ -64,17 +64,34 @@ export default function ContactDetailPage({ params }: { params: Promise<{ id: st
   const [actionSubject, setActionSubject] = useState('')
   const [submittingAction, setSubmittingAction] = useState(false)
   const [generatingEmail, setGeneratingEmail] = useState(false)
+  const [emailAiError, setEmailAiError] = useState<string | null>(null)
 
-  useEffect(() => {
-    load()
-    loadSequences()
-  }, [id]) // eslint-disable-line react-hooks/exhaustive-deps
-
-  async function loadSequences() {
+  const loadSequences = useCallback(async () => {
     const supabase = createSupabaseBrowser()
     const { data } = await supabase.from('crm_sequences').select('id, name, status').eq('status', 'active').order('name')
     setSequences(data ?? [])
-  }
+  }, [])
+
+  const load = useCallback(async () => {
+    const supabase = createSupabaseBrowser()
+    const [contactRes, activityRes, dealsRes, eventsRes] = await Promise.all([
+      supabase.from('crm_contacts').select('*').eq('id', id).single(),
+      supabase.from('crm_activity').select('*').eq('contact_id', id).order('created_at', { ascending: false }).limit(50),
+      supabase.from('crm_deals').select('*').eq('contact_id', id).order('created_at', { ascending: false }),
+      supabase.from('crm_events').select('*').eq('contact_id', id).order('start_time', { ascending: false }).limit(10),
+    ])
+    setContact(contactRes.data)
+    setActivity(activityRes.data ?? [])
+    setDeals(dealsRes.data ?? [])
+    setEvents(eventsRes.data ?? [])
+    setLoading(false)
+  }, [id])
+
+  useEffect(() => {
+    ;(async () => {
+      await Promise.all([load(), loadSequences()])
+    })()
+  }, [load, loadSequences])
 
   async function enrollInSequence() {
     if (!selectedSeqId) return
@@ -111,21 +128,6 @@ export default function ContactDetailPage({ params }: { params: Promise<{ id: st
     load()
   }
 
-  async function load() {
-    const supabase = createSupabaseBrowser()
-    const [contactRes, activityRes, dealsRes, eventsRes] = await Promise.all([
-      supabase.from('crm_contacts').select('*').eq('id', id).single(),
-      supabase.from('crm_activity').select('*').eq('contact_id', id).order('created_at', { ascending: false }).limit(50),
-      supabase.from('crm_deals').select('*').eq('contact_id', id).order('created_at', { ascending: false }),
-      supabase.from('crm_events').select('*').eq('contact_id', id).order('start_time', { ascending: false }).limit(10),
-    ])
-    setContact(contactRes.data)
-    setActivity(activityRes.data ?? [])
-    setDeals(dealsRes.data ?? [])
-    setEvents(eventsRes.data ?? [])
-    setLoading(false)
-  }
-
   async function submitAction() {
     if (!actionText.trim()) return
     setSubmittingAction(true)
@@ -151,6 +153,7 @@ export default function ContactDetailPage({ params }: { params: Promise<{ id: st
   async function generateEmailWithContext() {
     if (!contact) return
     setGeneratingEmail(true)
+    setEmailAiError(null)
     try {
       const res = await fetch('/api/crm/ai-generate', {
         method: 'POST',
@@ -166,10 +169,19 @@ export default function ContactDetailPage({ params }: { params: Promise<{ id: st
           },
         }),
       })
-      const data = await res.json()
-      if (data.subject && !actionSubject) setActionSubject(data.subject)
-      if (data.body) setActionText(data.body)
-    } catch { /* fail silently */ }
+      const data = await res.json().catch(() => null)
+
+      if (!res.ok) {
+        setEmailAiError(data?.error ?? `AI generation failed (${res.status})`)
+      } else if (data) {
+        if (data.subject && !actionSubject) setActionSubject(data.subject)
+        if (data.body) setActionText(data.body)
+      } else {
+        setEmailAiError('AI generation returned an empty response.')
+      }
+    } catch (err) {
+      setEmailAiError(err instanceof Error ? err.message : 'Network error contacting AI.')
+    }
     setGeneratingEmail(false)
   }
 
@@ -315,6 +327,9 @@ export default function ContactDetailPage({ params }: { params: Promise<{ id: st
                     </button>
                   )}
                 </div>
+              )}
+              {emailAiError && (
+                <p className="text-xs text-[#FF6B6B] break-words">{emailAiError}</p>
               )}
               <div className="flex gap-2">
                 <textarea

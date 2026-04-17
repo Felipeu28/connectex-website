@@ -1,22 +1,15 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { cookies } from 'next/headers'
 import {
   createGoogleEvent,
   updateGoogleEvent,
   deleteGoogleEvent,
 } from '@/lib/google-calendar'
+import { getAuthedClient } from '@/lib/google-tokens'
 import { createSupabaseServer } from '@/lib/supabase-server'
 
-async function getTokens() {
-  const cookieStore = await cookies()
-  const raw = cookieStore.get('google_tokens')?.value
-  if (!raw) return null
-  return JSON.parse(raw) as { access_token: string; refresh_token: string }
-}
-
 export async function POST(request: NextRequest) {
-  const tokens = await getTokens()
-  if (!tokens) {
+  const auth = await getAuthedClient()
+  if (!auth) {
     return NextResponse.json({ error: 'Google not connected' }, { status: 401 })
   }
 
@@ -27,13 +20,16 @@ export async function POST(request: NextRequest) {
 
   try {
     if (action === 'create') {
-      const googleId = await createGoogleEvent(tokens, {
-        title: event.title,
-        description: event.description,
-        start_time: event.start_time,
-        end_time: event.end_time,
-        location: event.location,
-      })
+      const googleId = await createGoogleEvent(
+        {
+          title: event.title,
+          description: event.description,
+          start_time: event.start_time,
+          end_time: event.end_time,
+          location: event.location,
+        },
+        auth
+      )
 
       if (googleId && event_id) {
         await supabase
@@ -46,7 +42,6 @@ export async function POST(request: NextRequest) {
     }
 
     if (action === 'update') {
-      // Fetch the existing event to get google_event_id
       const { data: existing } = await supabase
         .from('crm_events')
         .select('google_event_id')
@@ -54,13 +49,17 @@ export async function POST(request: NextRequest) {
         .single()
 
       if (existing?.google_event_id) {
-        await updateGoogleEvent(tokens, existing.google_event_id, {
-          title: event.title,
-          description: event.description,
-          start_time: event.start_time,
-          end_time: event.end_time,
-          location: event.location,
-        })
+        await updateGoogleEvent(
+          existing.google_event_id,
+          {
+            title: event.title,
+            description: event.description,
+            start_time: event.start_time,
+            end_time: event.end_time,
+            location: event.location,
+          },
+          auth
+        )
       }
 
       return NextResponse.json({ success: true })
@@ -74,7 +73,7 @@ export async function POST(request: NextRequest) {
         .single()
 
       if (existing?.google_event_id) {
-        await deleteGoogleEvent(tokens, existing.google_event_id)
+        await deleteGoogleEvent(existing.google_event_id, auth)
       }
 
       return NextResponse.json({ success: true })

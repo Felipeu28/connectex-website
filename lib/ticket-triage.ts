@@ -293,7 +293,7 @@ Analyze this ticket and respond with ONLY valid JSON in this exact format:
 
   parts.push({ text: textPrompt })
 
-  const triage = await callGeminiJSON<{
+  const triageResult = await callGeminiJSON<{
     can_handle: boolean
     confidence: number
     category: string
@@ -307,11 +307,12 @@ Analyze this ticket and respond with ONLY valid JSON in this exact format:
     maxOutputTokens: 1200,
   })
 
-  if (!triage) {
-    console.error('Failed to parse Gemini triage response for ticket:', ticket_id)
-    return { can_handle: false, confidence: 0, category: 'general', priority_override: null, routing_reason: null, error: 'AI triage failed to parse' }
+  if (!triageResult.ok) {
+    console.error('Triage failed for ticket', ticket_id, '—', triageResult.error)
+    return { can_handle: false, confidence: 0, category: 'general', priority_override: null, routing_reason: null, error: triageResult.error }
   }
 
+  const triage = triageResult.data
   const shouldHandle = triage.can_handle && triage.confidence >= 60
   const now = new Date().toISOString()
 

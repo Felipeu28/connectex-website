@@ -270,7 +270,7 @@ export default function ContactsPage() {
       <ContactImportModal
         open={importOpen}
         onClose={() => setImportOpen(false)}
-        onImported={(count) => { loadContacts(); setImportOpen(false) }}
+        onImported={() => { loadContacts(); setImportOpen(false) }}
       />
     </CRMShell>
   )
