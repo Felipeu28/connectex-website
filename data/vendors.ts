@@ -55,7 +55,7 @@ export const vendors: Vendor[] = [
     color: '#00C9A7',
     category: 'Managed IT',
     local: true,
-    url: 'https://moil.com',
+    url: 'https://moilapp.com/marketing',
   },
   {
     name: 'vCom Solutions',
