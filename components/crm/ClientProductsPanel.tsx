@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useEffect, useState, useCallback } from 'react'
 import { Monitor, Plus, Trash2, X } from 'lucide-react'
 
 interface ClientProduct {
@@ -33,11 +33,7 @@ export function ClientProductsPanel({ contactId }: { contactId: string }) {
   const [serialNumber, setSerialNumber] = useState('')
   const [notes, setNotes] = useState('')
 
-  useEffect(() => {
-    loadProducts()
-  }, [contactId]) // eslint-disable-line react-hooks/exhaustive-deps
-
-  async function loadProducts() {
+  const loadProducts = useCallback(async () => {
     setLoading(true)
     const res = await fetch(`/api/crm/contacts/${contactId}/products`)
     if (res.ok) {
@@ -45,7 +41,12 @@ export function ClientProductsPanel({ contactId }: { contactId: string }) {
       setProducts(Array.isArray(data) ? data : [])
     }
     setLoading(false)
-  }
+  }, [contactId])
+
+  useEffect(() => {
+    const id = setTimeout(() => { void loadProducts() }, 0)
+    return () => clearTimeout(id)
+  }, [loadProducts])
 
   async function handleAdd(e: React.FormEvent) {
     e.preventDefault()

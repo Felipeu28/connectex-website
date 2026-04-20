@@ -11,7 +11,6 @@ import {
   Clock,
   CheckCircle2,
   AlertCircle,
-  MessageSquare,
   ChevronRight,
 } from 'lucide-react'
 import type { Ticket as TicketType } from '@/lib/crm-types'
@@ -23,14 +22,6 @@ interface ClientProduct {
   model: string
   serial_number: string | null
   notes: string | null
-}
-
-const statusOrder: Record<string, number> = {
-  open: 0,
-  in_progress: 1,
-  waiting: 2,
-  resolved: 3,
-  closed: 4,
 }
 
 const statusIcon: Record<string, React.ReactNode> = {

@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useRef, useEffect } from 'react'
+import Link from 'next/link'
 import { Send, User, Shield, Bot, Loader2 } from 'lucide-react'
 import { createSupabaseBrowser } from '@/lib/supabase-browser'
 import type { TicketMessage, TicketWithMessages } from '@/lib/ticket-types'
@@ -15,7 +16,6 @@ function formatDate(dateStr: string) {
 function MessageBubble({ msg }: { msg: TicketMessage }) {
   const isAI = msg.sender_type === 'ai' || msg.sender_name === 'Connectex AI Support'
   const isAdmin = msg.sender_type === 'admin' && !isAI
-  const isClient = msg.sender_type === 'client'
 
   let bubbleBg = 'bg-white/4 border border-white/8'
   let nameColor = 'text-white'
@@ -203,9 +203,9 @@ export function PortalTicketThread({ ticket, senderName }: PortalTicketThreadPro
       {isClosed ? (
         <div className="text-center text-[#94A3B8] text-sm py-4 glass rounded-xl px-4" style={{ border: '1px solid rgba(255,255,255,0.08)' }}>
           This ticket has been {ticket.status}.{' '}
-          <a href="/portal/tickets/new" className="text-[#00C9A7] hover:underline">
+          <Link href="/portal/tickets/new" className="text-[#00C9A7] hover:underline">
             Submit a new ticket
-          </a>{' '}
+          </Link>{' '}
           if you need further assistance.
         </div>
       ) : (

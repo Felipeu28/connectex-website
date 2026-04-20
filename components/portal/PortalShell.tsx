@@ -4,7 +4,7 @@ import { useState } from 'react'
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { createSupabaseBrowser } from '@/lib/supabase-browser'
-import { Headphones, LayoutDashboard, Plus, LogOut, ChevronDown } from 'lucide-react'
+import { Headphones, LayoutDashboard, Plus, LogOut } from 'lucide-react'
 
 interface PortalShellProps {
   children: React.ReactNode

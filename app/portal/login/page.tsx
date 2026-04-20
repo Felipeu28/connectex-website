@@ -1,7 +1,7 @@
 'use client'
 
 import { useState } from 'react'
-import Image from 'next/image'
+import Link from 'next/link'
 import { createSupabaseBrowser } from '@/lib/supabase-browser'
 import { Mail, ArrowRight, Check, Headphones } from 'lucide-react'
 
@@ -136,9 +136,9 @@ export default function PortalLoginPage() {
         {/* Help link */}
         <p className="text-center text-[#4B5563] text-xs mt-6">
           Need help?{' '}
-          <a href="/ticketing" className="text-[#00C9A7] hover:underline">
+          <Link href="/ticketing" className="text-[#00C9A7] hover:underline">
             Submit a ticket without signing in
-          </a>
+          </Link>
         </p>
       </div>
     </div>

@@ -49,7 +49,7 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       .map((c) => c.email?.toLowerCase().trim())
       .filter((e): e is string => Boolean(e))
 
-    let existingEmails = new Set<string>()
+    const existingEmails = new Set<string>()
     if (emailsToCheck.length > 0) {
       // Query in chunks of 500 to stay within URL limits
       for (const chunk of chunkArray(emailsToCheck, 500)) {

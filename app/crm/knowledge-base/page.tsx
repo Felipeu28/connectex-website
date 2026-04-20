@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useState, useRef } from 'react'
+import { useEffect, useState, useRef, useCallback } from 'react'
 import { CRMShell } from '@/components/crm/CRMShell'
 import { BookOpen, Plus, Trash2, Upload, X, ChevronDown, ChevronUp } from 'lucide-react'
 
@@ -38,17 +38,18 @@ export default function KnowledgeBasePage() {
   const [formError, setFormError] = useState<string | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
 
-  useEffect(() => {
-    loadDocs()
-  }, [])
-
-  async function loadDocs() {
+  const loadDocs = useCallback(async () => {
     setLoading(true)
     const res = await fetch('/api/crm/knowledge-base')
     const data = await res.json()
     setDocs(Array.isArray(data) ? data : [])
     setLoading(false)
-  }
+  }, [])
+
+  useEffect(() => {
+    const id = setTimeout(() => { void loadDocs() }, 0)
+    return () => clearTimeout(id)
+  }, [loadDocs])
 
   async function handleFileUpload(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]

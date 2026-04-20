@@ -254,7 +254,7 @@ export async function POST(
     temperature: 0.35,
   })
 
-  if (!aiResult || !aiResult.response) {
+  if (!aiResult.ok || !aiResult.data.response) {
     // Gemini failed — route to Mark silently
     await admin.from('tickets').update({
       routed_to_mark: true,
@@ -263,21 +263,22 @@ export async function POST(
     return NextResponse.json({ ok: true, ai_skipped: true, reason: 'gemini_unavailable' })
   }
 
-  const confidence = aiResult.confidence ?? 0
-  const canHandle = aiResult.can_handle && confidence >= ROUTE_THRESHOLD
+  const { data: aiData } = aiResult
+  const confidence = aiData.confidence ?? 0
+  const canHandle = aiData.can_handle && confidence >= ROUTE_THRESHOLD
 
   // Save AI response
   await admin.from('ticket_messages').insert({
     ticket_id: ticket.id,
     sender_type: 'ai',
     sender_name: 'Connectex AI Support',
-    message: aiResult.response,
+    message: aiData.response,
   })
 
   // Update ticket fields
   await admin.from('tickets').update({
     ai_confidence: confidence,
-    ai_category: aiResult.category ?? categories[0],
+    ai_category: aiData.category ?? categories[0],
     ai_handled: canHandle,
     routed_to_mark: !canHandle,
     status: ticket.status === 'open' ? 'in_progress' : ticket.status,
@@ -287,7 +288,7 @@ export async function POST(
   // Notify client via email when AI responds (non-blocking)
   notifyClientNewReply(
     { clientName: ticket.name, clientEmail: ticket.email, subject: ticket.subject, token: ticket.token },
-    aiResult.response.slice(0, 300),
+    aiData.response.slice(0, 300),
     'Connectex AI Support'
   ).catch(() => {})
 
@@ -313,7 +314,7 @@ export async function POST(
               <div style="padding: 24px;">
                 <p style="margin: 0 0 16px;"><strong>Ticket:</strong> ${ticket.subject}</p>
                 <p style="margin: 0 0 16px;"><strong>Client:</strong> ${ticket.name} &lt;${ticket.email}&gt;</p>
-                <p style="margin: 0 0 16px;"><strong>AI routing reason:</strong> ${aiResult.route_reason ?? 'Low confidence'}</p>
+                <p style="margin: 0 0 16px;"><strong>AI routing reason:</strong> ${aiData.route_reason ?? 'Low confidence'}</p>
                 <p style="margin: 0 0 16px;"><strong>Client's latest message:</strong><br>${message}</p>
                 <div style="margin-top: 20px; display: flex; gap: 12px;">
                   <a href="${siteUrl}/crm/tickets/${ticket.id}" style="background: #8B2BE2; color: white; padding: 12px 20px; border-radius: 8px; text-decoration: none; font-weight: 600; font-size: 14px;">Open in CRM</a>
