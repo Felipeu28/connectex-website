@@ -118,6 +118,13 @@ export default function ContactsPage() {
               <Upload className="w-4 h-4" />
               Import CSV
             </button>
+            <Link
+              href="/crm/contacts/import"
+              className="inline-flex items-center gap-2 px-4 py-2.5 bg-[#8B2BE2]/10 hover:bg-[#8B2BE2]/20 border border-[#8B2BE2]/30 text-[#C084FC] font-medium text-sm rounded-xl transition-colors"
+            >
+              <Upload className="w-4 h-4" />
+              Airtable Import
+            </Link>
             <button
               onClick={() => { setEditContact(null); setModalOpen(true) }}
               className="inline-flex items-center gap-2 px-4 py-2.5 bg-[#00C9A7] hover:bg-[#00b394] text-[#0F1B2D] font-semibold text-sm rounded-xl transition-colors"

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase'
 import { createClient as createAdminClient } from '@supabase/supabase-js'
+import { createSupabaseServer } from '@/lib/supabase-server'
 import { notifyClientTicketCreated } from '@/lib/ticket-notifications'
 import { runTriage } from '@/lib/ticket-triage'
 import { requireAdmin } from '@/lib/auth-guard'
@@ -17,7 +18,7 @@ function getSupabaseAdmin() {
 export async function POST(req: NextRequest) {
   try {
     const data = await req.json()
-    const { name, email, company, subject, description, priority, image_url } = data
+    const { name, email, company, subject, description, priority, image_url, user_id } = data
 
     // Validate required fields
     if (!name || !email || !subject || !description) {
@@ -45,6 +46,7 @@ export async function POST(req: NextRequest) {
         description,
         priority: safePriority,
         image_url: image_url || null,
+        user_id: user_id || null,
       })
       .select('id, token')
       .single()
@@ -102,6 +104,13 @@ export async function GET(req: NextRequest) {
   if (errorResponse) return errorResponse
 
   try {
+    // CRM-only endpoint — require authenticated session
+    const authClient = await createSupabaseServer()
+    const { data: { session } } = await authClient.auth.getSession()
+    if (!session) {
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
+    }
+
     const { searchParams } = new URL(req.url)
     const status = searchParams.get('status')
     const priority = searchParams.get('priority')

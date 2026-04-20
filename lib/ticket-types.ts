@@ -1,6 +1,6 @@
 export type TicketPriority = 'low' | 'medium' | 'high' | 'urgent'
 export type TicketStatus = 'open' | 'in_progress' | 'waiting' | 'resolved' | 'closed'
-export type SenderType = 'client' | 'admin'
+export type SenderType = 'client' | 'admin' | 'ai'
 
 export interface Ticket {
   id: string
@@ -13,6 +13,11 @@ export interface Ticket {
   priority: TicketPriority
   status: TicketStatus
   image_url: string | null
+  ai_handled: boolean
+  ai_confidence: number | null
+  routed_to_mark: boolean
+  human_took_over: boolean
+  user_id: string | null
   created_at: string
   updated_at: string
 }

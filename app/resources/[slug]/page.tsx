@@ -210,12 +210,13 @@ export default async function PostPage({
           />
 
           {/* In-article CTA */}
-          <div className="mt-12 glass rounded-2xl p-8 border border-[#FF6B6B]/20 text-center">
-            <p className="text-sm font-semibold text-white mb-2">Ready to take action?</p>
-            <p className="text-sm text-[var(--text-muted)] mb-5">
-              Get a free vulnerability scan and see exactly where your business stands.
+          <div className="mt-12 glass rounded-2xl p-8 border border-[#8B2BE2]/20 text-center">
+            <p className="text-xs font-semibold text-[#00C9A7] uppercase tracking-widest mb-2">Free Assessment</p>
+            <p className="text-xl font-bold text-white mb-3">Ready to optimize your IT?</p>
+            <p className="text-sm text-[var(--text-muted)] mb-6 max-w-md mx-auto">
+              Get a free technology assessment from Mark. See exactly where your business can save money, close security gaps, and run more efficiently.
             </p>
-            <Button variant="cta" size="md" href="/contact">Get My Free Report</Button>
+            <Button variant="cta" size="md" href="/contact">Get My Free Assessment</Button>
           </div>
         </div>
       </article>

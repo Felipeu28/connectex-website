@@ -8,6 +8,7 @@ import { createSupabaseBrowser } from '@/lib/supabase-browser'
 import { PIPELINE_STAGES, type Contact, type Activity, type Deal, type CalendarEvent, type ActivityType } from '@/lib/crm-types'
 
 interface Sequence { id: string; name: string; status: string }
+import { ClientProductsPanel } from '@/components/crm/ClientProductsPanel'
 import { logActivity } from '@/lib/crm-activity'
 import {
   ArrowLeft, Pencil, Mail, Phone, Building2, Briefcase, Clock, Plus, DollarSign,
@@ -459,6 +460,9 @@ export default function ContactDetailPage({ params }: { params: Promise<{ id: st
                 </div>
               )}
             </div>
+
+            {/* Client Devices */}
+            <ClientProductsPanel contactId={id} />
 
             {/* Upcoming Events */}
             {events.length > 0 && (

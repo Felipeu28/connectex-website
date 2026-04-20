@@ -17,6 +17,7 @@ import {
   ChevronRight,
   Workflow,
   FileText,
+  BookOpen,
 } from 'lucide-react'
 import { createSupabaseBrowser } from '@/lib/supabase-browser'
 
@@ -29,6 +30,7 @@ const navItems = [
   { href: '/crm/sequences', label: 'Sequences', icon: Workflow },
   { href: '/crm/calendar', label: 'Calendar', icon: Calendar },
   { href: '/crm/blog', label: 'Blog', icon: FileText },
+  { href: '/crm/knowledge-base', label: 'Knowledge Base', icon: BookOpen },
 ]
 
 export function CRMShell({ children }: { children: React.ReactNode }) {

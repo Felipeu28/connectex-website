@@ -187,7 +187,7 @@ async function notifyMark(ticket: {
     },
     body: JSON.stringify({
       from: 'Connectex Support <support@connectex.net>',
-      to: ['mark@connectex.net'],
+      to: ['support@connectex.net'],
       subject: `[${priorityLabel.toUpperCase()}] New ticket needs your attention: ${ticket.subject}`,
       html: `
         <div style="font-family: system-ui, sans-serif; max-width: 600px; margin: 0 auto; background: #0F1B2D; color: #E8EAED; border-radius: 12px; overflow: hidden;">
@@ -253,7 +253,43 @@ export async function runTriage(ticket_id: string): Promise<TriageResult> {
   }
 
   const categories = detectCategory(ticket.subject, ticket.description)
-  const knowledgeContext = loadKnowledge(categories)
+  const staticKnowledge = loadKnowledge(categories)
+
+  // Load dynamic KB documents from database
+  const dynamicKnowledge = await (async () => {
+    try {
+      const { data } = await supabase
+        .from('kb_documents')
+        .select('title, content')
+        .in('category', categories)
+        .not('content', 'is', null)
+      if (!data || data.length === 0) return ''
+      return data
+        .map((doc: { title: string; content: string }) => `## ${doc.title}\n${doc.content}`)
+        .join('\n\n---\n\n')
+    } catch {
+      return ''
+    }
+  })()
+
+  // Load client device inventory
+  const deviceContext = await (async () => {
+    try {
+      const { data: products } = await supabase
+        .from('client_products')
+        .select('device_type, manufacturer, model, serial_number, notes')
+        .eq('client_email', ticket.email.toLowerCase().trim())
+      if (!products || products.length === 0) return ''
+      const lines = products.map((p: { device_type: string; manufacturer: string | null; model: string; serial_number: string | null; notes: string | null }) =>
+        `- ${p.device_type}: ${p.manufacturer ? `${p.manufacturer} ` : ''}${p.model}${p.serial_number ? ` (S/N: ${p.serial_number})` : ''}${p.notes ? ` — ${p.notes}` : ''}`
+      )
+      return `## Client Devices on File\n${lines.join('\n')}`
+    } catch {
+      return ''
+    }
+  })()
+
+  const knowledgeContext = [staticKnowledge, dynamicKnowledge, deviceContext].filter(Boolean).join('\n\n---\n\n')
   const systemPrompt = buildSystemPrompt(knowledgeContext)
 
   const textPrompt = `Ticket subject: ${ticket.subject}
@@ -316,12 +352,14 @@ Analyze this ticket and respond with ONLY valid JSON in this exact format:
   }
 
   const triage = triageResult.data
-  const shouldHandle = triage.can_handle && triage.confidence >= 60
+  const shouldHandle = triage.can_handle && triage.confidence >= 65
   const now = new Date().toISOString()
 
   const ticketUpdate: Record<string, unknown> = {
     ai_response: triage.auto_response,
     ai_handled: shouldHandle,
+    ai_confidence: triage.confidence,
+    ai_category: triage.category,
     routed_to_mark: !shouldHandle,
     updated_at: now,
   }
@@ -334,7 +372,7 @@ Analyze this ticket and respond with ONLY valid JSON in this exact format:
   if (shouldHandle) {
     await supabase.from('ticket_messages').insert({
       ticket_id,
-      sender_type: 'admin',
+      sender_type: 'ai',
       sender_name: 'Connectex AI Support',
       message: triage.auto_response,
     })

@@ -1,7 +1,8 @@
-import { notFound } from 'next/navigation'
+import { notFound, redirect } from 'next/navigation'
 import Link from 'next/link'
 import { ArrowLeft, Calendar, Mail, Building2, CheckCircle } from 'lucide-react'
 import { createClient } from '@/lib/supabase'
+import { createSupabaseServer } from '@/lib/supabase-server'
 import { StatusBadge, PriorityBadge } from '@/components/ticketing/TicketStatusBadge'
 import { TicketThread } from '@/components/ticketing/TicketThread'
 import type { TicketWithMessages } from '@/lib/ticket-types'
@@ -46,6 +47,17 @@ function formatDate(dateStr: string): string {
 export default async function TicketViewPage({ params, searchParams }: TicketPageProps) {
   const { id } = await params
   const { new: isNew } = await searchParams
+
+  // If the user has an active portal session, send them to the richer portal view
+  try {
+    const supabase = await createSupabaseServer()
+    const { data: { session } } = await supabase.auth.getSession()
+    if (session) {
+      redirect(`/portal/tickets/${id}`)
+    }
+  } catch {
+    // Non-blocking — continue with legacy ticketing view if session check fails
+  }
 
   const ticket = await getTicket(id)
 

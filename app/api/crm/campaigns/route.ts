@@ -7,7 +7,7 @@ export async function POST(req: NextRequest) {
   if (errorResponse) return errorResponse
 
   try {
-    const { action, prompt } = await req.json()
+    const { action, prompt, documentContext } = await req.json()
 
     if (action === 'generate') {
       if (!process.env.GEMINI_API_KEY) {
@@ -17,10 +17,14 @@ export async function POST(req: NextRequest) {
         )
       }
 
+      const docSection = documentContext?.trim()
+        ? `\n\n## Reference Document\nUse the content below as the source material for the email — extract key benefits, features, or talking points from it:\n\n${documentContext.slice(0, 6000)}`
+        : ''
+
       const result = await callGeminiJSON<{ name: string; subject: string; body: string }>({
         model: GEMINI_PRO,
         systemInstruction: `You are writing sales emails for Connectex Solutions, a vendor-neutral technology advisor in Austin, TX. The sender is Mark, who helps SMBs source IT, cybersecurity, cloud, and communications solutions from 600+ providers. Write professional, warm, and concise emails. Return ONLY valid JSON.`,
-        parts: [{ text: `Write a sales email based on this brief: ${prompt}
+        parts: [{ text: `Write a sales email based on this brief: ${prompt}${docSection}
 
 Rules:
 - Under 250 words
