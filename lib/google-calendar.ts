@@ -9,12 +9,13 @@ const SCOPES = [
 ]
 
 /** Generate the Google OAuth consent URL */
-export function getAuthUrl() {
+export function getAuthUrl(state?: string) {
   const client = getOAuthClientForConsent()
   return client.generateAuthUrl({
     access_type: 'offline',
     prompt: 'consent',
     scope: SCOPES,
+    ...(state ? { state } : {}),
   })
 }
 

@@ -2,11 +2,12 @@ import { Button } from '@/components/ui/Button'
 import { SectionWrapper } from '@/components/ui/SectionWrapper'
 import { breadcrumbSchema } from '@/lib/schema'
 import { generateMetadata as genMeta } from '@/lib/seo'
+import { featuredVendor, gridVendors, type Vendor } from '@/data/vendors'
 
 export const metadata = genMeta({
   title: 'Preferred Technology Vendors — Direct Partnerships | Connectex',
   description:
-    'Connectex has preferred direct partnerships with Verizon and leading technology providers — giving Austin SMBs better pricing, faster support, and dedicated account management.',
+    'Connectex has preferred direct partnerships with leading technology providers — giving SMBs better pricing, faster support, and dedicated account management.',
   path: '/preferred-vendors',
 })
 
@@ -31,13 +32,153 @@ const whyItMatters = [
   },
 ]
 
-const verizonOfferings = [
-  'Business wireless plans (negotiated rates)',
-  'Dedicated fiber & broadband circuits',
-  'SD-WAN and network management',
-  'IoT connectivity solutions',
-  'Priority business support & dedicated rep',
-]
+function VendorCard({ vendor }: { vendor: Vendor }) {
+  const card = (
+    <div className="glass rounded-2xl p-6 border border-white/8 relative overflow-hidden group transition-all hover:border-white/15">
+      {/* Local ribbon */}
+      {vendor.local && (
+        <div className="absolute top-3 right-3">
+          <span
+            className="inline-flex items-center gap-1 text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full"
+            style={{
+              background: `${vendor.color}18`,
+              color: vendor.color,
+              border: `1px solid ${vendor.color}30`,
+            }}
+          >
+            <svg className="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z" />
+              <circle cx="12" cy="10" r="3" />
+            </svg>
+            Local
+          </span>
+        </div>
+      )}
+
+      <div className="flex items-start gap-4">
+        <div
+          className="w-12 h-12 rounded-xl flex items-center justify-center shrink-0 text-sm font-bold"
+          style={{
+            background: `${vendor.color}15`,
+            border: `1px solid ${vendor.color}25`,
+            color: vendor.color,
+          }}
+        >
+          {vendor.initials}
+        </div>
+
+        <div className="flex-1 min-w-0">
+          <div className="flex items-center gap-2 mb-1">
+            <h3 className="font-semibold text-[var(--text)] truncate">{vendor.name}</h3>
+          </div>
+          <span
+            className="inline-block text-[10px] font-semibold uppercase tracking-wider px-2 py-0.5 rounded-full mb-2"
+            style={{
+              background: `${vendor.color}10`,
+              color: vendor.color,
+            }}
+          >
+            {vendor.category}
+          </span>
+          <p className="text-sm text-[var(--text-muted)] leading-relaxed">{vendor.tagline}</p>
+        </div>
+      </div>
+    </div>
+  )
+
+  if (vendor.url) {
+    return (
+      <a href={vendor.url} target="_blank" rel="noopener noreferrer" className="block">
+        {card}
+      </a>
+    )
+  }
+
+  return card
+}
+
+function FeaturedPartner({ vendor }: { vendor: Vendor }) {
+  return (
+    <SectionWrapper className="py-20 px-4 sm:px-6 bg-[#0a1520]">
+      <div className="max-w-4xl mx-auto">
+        <p className="text-[#00C9A7] text-sm font-semibold uppercase tracking-widest mb-8 text-center">
+          Featured Partner
+        </p>
+
+        <div
+          className="glass rounded-2xl p-8 sm:p-10 border border-white/8 relative overflow-hidden"
+          style={{ borderLeft: `4px solid ${vendor.color}` }}
+        >
+          <div
+            className="absolute top-0 left-0 w-64 h-64 rounded-full blur-3xl pointer-events-none"
+            style={{ background: `${vendor.color}08` }}
+          />
+
+          <div className="relative z-10">
+            <div className="flex flex-wrap items-start gap-6 mb-8">
+              <div
+                className="w-16 h-16 rounded-full flex items-center justify-center shrink-0 text-lg font-bold"
+                style={{
+                  background: `${vendor.color}15`,
+                  border: `1px solid ${vendor.color}30`,
+                  color: vendor.color,
+                }}
+              >
+                {vendor.initials}
+              </div>
+
+              <div className="flex-1 min-w-0">
+                <div className="flex flex-wrap items-center gap-3 mb-1">
+                  <h2 className="text-2xl font-bold text-[var(--text)]">{vendor.name}</h2>
+                  <span
+                    className="text-xs font-semibold px-3 py-1 rounded-full"
+                    style={{
+                      background: `${vendor.color}12`,
+                      color: vendor.color,
+                      border: `1px solid ${vendor.color}25`,
+                    }}
+                  >
+                    Preferred Partner
+                  </span>
+                </div>
+                <p className="text-[var(--text-muted)] text-sm">{vendor.tagline}</p>
+              </div>
+            </div>
+
+            {vendor.offerings && (
+              <div className="mb-8">
+                <h3 className="font-semibold text-[var(--text)] mb-4">
+                  What we offer through our {vendor.name} partnership:
+                </h3>
+                <ul className="space-y-3">
+                  {vendor.offerings.map((item) => (
+                    <li key={item} className="flex items-start gap-3">
+                      <div
+                        className="w-5 h-5 rounded-md flex items-center justify-center shrink-0 mt-0.5 text-xs font-bold"
+                        style={{
+                          background: `${vendor.color}12`,
+                          border: `1px solid ${vendor.color}25`,
+                          color: vendor.color,
+                        }}
+                      >
+                        ✓
+                      </div>
+                      <span className="text-[var(--text-muted)] text-sm">{item}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            <Button variant="cta" size="lg" href="/contact">
+              Talk to Mark About {vendor.name} →
+            </Button>
+          </div>
+        </div>
+      </div>
+    </SectionWrapper>
+  )
+}
 
 export default function PreferredVendorsPage() {
   return (
@@ -111,121 +252,29 @@ export default function PreferredVendorsPage() {
         </div>
       </SectionWrapper>
 
-      {/* Featured Partner: Verizon */}
-      <SectionWrapper className="py-20 px-4 sm:px-6 bg-[#0a1520]">
-        <div className="max-w-4xl mx-auto">
-          <p className="text-[#00C9A7] text-sm font-semibold uppercase tracking-widest mb-8 text-center">
-            Featured Partner
-          </p>
+      {/* Featured Partner */}
+      {featuredVendor && <FeaturedPartner vendor={featuredVendor} />}
 
-          {/* Verizon card */}
-          <div
-            className="glass rounded-2xl p-8 sm:p-10 border border-white/8 relative overflow-hidden"
-            style={{ borderLeft: '4px solid #CD040B' }}
-          >
-            {/* Subtle red glow */}
-            <div
-              className="absolute top-0 left-0 w-64 h-64 rounded-full blur-3xl pointer-events-none"
-              style={{ background: 'rgba(205, 4, 11, 0.06)' }}
-            />
-
-            <div className="relative z-10">
-              <div className="flex flex-wrap items-start gap-6 mb-8">
-                {/* Logo placeholder */}
-                <div
-                  className="w-16 h-16 rounded-full flex items-center justify-center shrink-0 text-lg font-bold"
-                  style={{
-                    background: 'rgba(205, 4, 11, 0.15)',
-                    border: '1px solid rgba(205, 4, 11, 0.30)',
-                    color: '#CD040B',
-                  }}
-                >
-                  VZ
-                </div>
-
-                <div className="flex-1 min-w-0">
-                  <div className="flex flex-wrap items-center gap-3 mb-1">
-                    <h2 className="text-2xl font-bold text-[var(--text)]">Verizon Business</h2>
-                    <span
-                      className="text-xs font-semibold px-3 py-1 rounded-full"
-                      style={{
-                        background: 'rgba(205, 4, 11, 0.12)',
-                        color: '#CD040B',
-                        border: '1px solid rgba(205, 4, 11, 0.25)',
-                      }}
-                    >
-                      Preferred Partner
-                    </span>
-                  </div>
-                  <p className="text-[var(--text-muted)] text-sm">
-                    Direct carrier partnership with dedicated account access and negotiated business
-                    pricing.
-                  </p>
-                </div>
-              </div>
-
-              <div className="mb-8">
-                <h3 className="font-semibold text-[var(--text)] mb-4">
-                  What we offer through our Verizon partnership:
-                </h3>
-                <ul className="space-y-3">
-                  {verizonOfferings.map((item) => (
-                    <li key={item} className="flex items-start gap-3">
-                      <div
-                        className="w-5 h-5 rounded-md flex items-center justify-center shrink-0 mt-0.5 text-xs font-bold"
-                        style={{
-                          background: 'rgba(205, 4, 11, 0.12)',
-                          border: '1px solid rgba(205, 4, 11, 0.25)',
-                          color: '#CD040B',
-                        }}
-                      >
-                        ✓
-                      </div>
-                      <span className="text-[var(--text-muted)] text-sm">{item}</span>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-
-              <Button variant="cta" size="lg" href="/contact">
-                Talk to Mark About Verizon →
-              </Button>
-            </div>
-          </div>
-        </div>
-      </SectionWrapper>
-
-      {/* More Partners Coming Soon */}
+      {/* Preferred Vendor Grid */}
       <SectionWrapper className="py-20 px-4 sm:px-6">
-        <div className="max-w-4xl mx-auto">
+        <div className="max-w-7xl mx-auto">
           <div className="text-center mb-12">
             <h2 className="text-2xl sm:text-3xl font-bold text-[var(--text)] mb-4">
-              Building the preferred network
+              Our preferred vendor network
             </h2>
             <p className="text-[var(--text-muted)] max-w-2xl mx-auto">
-              Connectex is growing its network of preferred direct vendor relationships. If you
-              represent a technology provider and are interested in a preferred partnership with
-              Connectex, reach out directly.
+              Every vendor below is a direct partnership &mdash; not a catalog listing. Mark has
+              vetted each one and can get you pricing and terms you won&rsquo;t find on your own.
             </p>
           </div>
 
-          {/* Placeholder cards */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-10">
-            {Array.from({ length: 4 }).map((_, i) => (
-              <div
-                key={i}
-                className="glass rounded-2xl p-6 flex flex-col items-center gap-3 text-center"
-                style={{ border: '1px dashed rgba(255,255,255,0.12)' }}
-              >
-                <div className="w-12 h-12 rounded-full bg-white/5 border border-white/10 flex items-center justify-center">
-                  <span className="text-[var(--text-muted)] text-xs font-medium">?</span>
-                </div>
-                <p className="text-xs text-[var(--text-muted)] font-medium">Partner Coming Soon</p>
-              </div>
+          <div className="grid sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            {gridVendors.map((vendor) => (
+              <VendorCard key={vendor.name} vendor={vendor} />
             ))}
           </div>
 
-          <div className="text-center">
+          <div className="text-center mt-12">
             <Button
               variant="secondary"
               size="lg"
@@ -241,11 +290,11 @@ export default function PreferredVendorsPage() {
       <section className="py-20 px-4 sm:px-6 bg-[#0a1520]">
         <div className="max-w-2xl mx-auto text-center">
           <h2 className="text-3xl font-bold text-[var(--text)] mb-4">
-            Want Verizon pricing Mark negotiated for you?
+            Let Mark connect you with the right vendor
           </h2>
           <p className="text-[var(--text-muted)] mb-8">
-            Get a free assessment of your current wireless and connectivity costs. Mark will show you
-            what better rates look like &mdash; no commitment required.
+            Get a free assessment of your current technology costs. Mark will match you with the right
+            preferred partner and show you what better rates look like &mdash; no commitment required.
           </p>
           <Button variant="cta" size="lg" href="/contact">
             Get My Free Assessment

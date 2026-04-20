@@ -53,9 +53,9 @@ export async function callGemini({
 
   let res: Response
   try {
-    res = await fetch(`${BASE_URL}/${model}:generateContent?key=${apiKey}`, {
+    res = await fetch(`${BASE_URL}/${model}:generateContent`, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      headers: { 'Content-Type': 'application/json', 'x-goog-api-key': apiKey },
       body: JSON.stringify(body),
     })
   } catch (err) {

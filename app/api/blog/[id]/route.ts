@@ -21,8 +21,8 @@ export async function GET(
     }
 
     return NextResponse.json(data)
-  } catch (err) {
-    return NextResponse.json({ error: String(err) }, { status: 500 })
+  } catch {
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
 
@@ -46,7 +46,11 @@ export async function PATCH(
       return NextResponse.json({ error: 'Post not found' }, { status: 404 })
     }
 
-    const patch: Record<string, unknown> = { ...body }
+    const ALLOWED = ['slug', 'title', 'excerpt', 'body', 'category', 'read_time', 'featured', 'status', 'meta_description'] as const
+    const patch: Record<string, unknown> = {}
+    for (const key of ALLOWED) {
+      if (key in body) patch[key] = body[key]
+    }
 
     if (body.status === 'published' && current.status === 'draft') {
       patch.published_at = new Date().toISOString()
@@ -73,8 +77,8 @@ export async function PATCH(
     }
 
     return NextResponse.json(data)
-  } catch (err) {
-    return NextResponse.json({ error: String(err) }, { status: 500 })
+  } catch {
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
 
@@ -98,7 +102,7 @@ export async function DELETE(
 
     revalidatePath('/resources')
     return NextResponse.json({ success: true })
-  } catch (err) {
-    return NextResponse.json({ error: String(err) }, { status: 500 })
+  } catch {
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
