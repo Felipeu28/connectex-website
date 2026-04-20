@@ -1,7 +1,11 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { runTriage } from '@/lib/ticket-triage'
+import { requireAdmin } from '@/lib/auth-guard'
 
 export async function POST(req: NextRequest) {
+  const { errorResponse } = await requireAdmin()
+  if (errorResponse) return errorResponse
+
   if (!process.env.GEMINI_API_KEY) {
     return NextResponse.json({ error: 'GEMINI_API_KEY not set' }, { status: 503 })
   }

@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { revalidatePath } from 'next/cache'
 import { createSupabaseServer } from '@/lib/supabase-server'
+import { requireAdmin } from '@/lib/auth-guard'
 
 export async function GET(
   _request: NextRequest,
@@ -30,6 +31,9 @@ export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const { errorResponse } = await requireAdmin()
+  if (errorResponse) return errorResponse
+
   try {
     const { id } = await params
     const supabase = await createSupabaseServer()
@@ -86,6 +90,9 @@ export async function DELETE(
   _request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
+  const { errorResponse } = await requireAdmin()
+  if (errorResponse) return errorResponse
+
   try {
     const { id } = await params
     const supabase = await createSupabaseServer()
