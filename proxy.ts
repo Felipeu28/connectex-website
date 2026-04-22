@@ -5,8 +5,10 @@
 
 import { NextResponse, type NextRequest } from 'next/server'
 
-export async function proxy(_request: NextRequest) {
-  return NextResponse.next()
+export async function proxy(request: NextRequest) {
+  const response = NextResponse.next()
+  response.headers.set('x-pathname', request.nextUrl.pathname)
+  return response
 }
 
 export const config = {
