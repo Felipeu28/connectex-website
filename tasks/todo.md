@@ -6,7 +6,7 @@
 - [x] Restore green lint/build verification for the CRM surface before larger changes.
 
 ## Next Up
-- [ ] Replace the temporary `proxy.ts` bypass with real CRM and portal session gating.
+- [x] Replace the temporary `proxy.ts` bypass with real CRM and portal session gating.
 - [ ] Verify Supabase migrations `009_portal_and_ai_chat.sql` and `010_lock_down_rls.sql` are applied in the target project.
 - [ ] Add import dry-run reporting: parsed rows, duplicates, skipped rows, devices detected, and explicit error output.
 - [ ] Add duplicate strategy for imports across both CRM and per-file uploads.
