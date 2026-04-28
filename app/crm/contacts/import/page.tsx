@@ -3,9 +3,14 @@
 import { useState, useRef } from 'react'
 import { CRMShell } from '@/components/crm/CRMShell'
 import { ArrowLeft, Upload, AlertTriangle, CheckCircle2, Loader2, X, Info } from 'lucide-react'
+import {
+  buildDefaultStatusMapping,
+  parseAirtableContactsCsv,
+  type AirtableImportRow,
+  type AirtableStatusMapping,
+} from '@/lib/airtable-import'
 import Link from 'next/link'
-
-type PipelineStage = 'lead' | 'qualified' | 'proposal' | 'negotiation' | 'closed_won' | 'closed_lost'
+import type { PipelineStage } from '@/lib/crm-types'
 
 const PIPELINE_STAGES: { key: PipelineStage; label: string }[] = [
   { key: 'lead', label: 'Lead' },
@@ -16,204 +21,44 @@ const PIPELINE_STAGES: { key: PipelineStage; label: string }[] = [
   { key: 'closed_lost', label: 'Closed Lost' },
 ]
 
-interface ParsedRow {
-  // Core contact fields
-  name: string
-  company: string
-  email: string
-  phone: string
-  notes: string
-  stage: PipelineStage
-  // Devices
-  devices: { device_type: string; manufacturer: string | null; model: string; serial_number: string | null }[]
-  // Raw status from Airtable (before mapping)
-  rawStatus: string
-  // Validity
-  valid: boolean
-  skipReason?: string
-}
-
-interface StatusMapping {
-  [airtableStatus: string]: PipelineStage
-}
-
-// Parse a single CSV line respecting quoted fields
-function parseCSVLine(line: string): string[] {
-  const fields: string[] = []
-  let current = ''
-  let inQuotes = false
-
-  for (let i = 0; i < line.length; i++) {
-    const ch = line[i]
-    if (ch === '"') {
-      if (inQuotes && line[i + 1] === '"') {
-        current += '"'
-        i++
-      } else {
-        inQuotes = !inQuotes
-      }
-    } else if (ch === '\t' && !inQuotes) {
-      fields.push(current.trim())
-      current = ''
-    } else if (ch === ',' && !inQuotes) {
-      fields.push(current.trim())
-      current = ''
-    } else {
-      current += ch
-    }
-  }
-  fields.push(current.trim())
-  return fields
-}
-
-// Parse device cells like "Device Name (IMEI123)\nDevice Name 2 (IMEI456)"
-function parseDeviceCell(
-  raw: string,
-  deviceType: string,
-  manufacturer: string | null
-): { device_type: string; manufacturer: string | null; model: string; serial_number: string | null }[] {
-  if (!raw?.trim()) return []
-  return raw
-    .split(/[\n,]+/)
-    .map((s) => s.trim())
-    .filter(Boolean)
-    .map((entry) => {
-      // Try to extract serial/IMEI in parens: "T67LTE (353254112345678)"
-      const match = entry.match(/^(.*?)\s*\(([^)]+)\)\s*$/)
-      if (match) {
-        return { device_type: deviceType, manufacturer, model: match[1].trim() || deviceType, serial_number: match[2].trim() }
-      }
-      return { device_type: deviceType, manufacturer, model: entry || deviceType, serial_number: null }
-    })
-}
-
-function parseAirtableCSV(text: string): { rows: ParsedRow[]; uniqueStatuses: string[] } {
-  const lines = text.split('\n').filter((l) => l.trim())
-  if (lines.length < 2) return { rows: [], uniqueStatuses: [] }
-
-  const headers = parseCSVLine(lines[0]).map((h) => h.replace(/"/g, '').trim())
-
-  // Column index helpers
-  const col = (name: string) => headers.findIndex((h) => h.toLowerCase() === name.toLowerCase())
-  const get = (row: string[], name: string) => row[col(name)]?.trim() ?? ''
-
-  const uniqueStatuses = new Set<string>()
-  const rows: ParsedRow[] = []
-
-  for (let i = 1; i < lines.length; i++) {
-    const row = parseCSVLine(lines[i])
-    if (row.every((c) => !c)) continue // skip empty rows
-
-    const bizName = get(row, 'Name')
-    const pocName = get(row, 'POC Name')
-    const pocEmail = get(row, 'POC Email')
-    const pocPhone = get(row, 'POC Phone #')
-    const rawStatus = get(row, 'Status')
-    const notes = get(row, 'Notes')
-    const whiteboarding = get(row, 'Whiteboarding')
-    const ecpd = get(row, 'ECPD #')
-    const leadId = get(row, 'Lead ID')
-    const carrier = get(row, 'Carrier')
-    const accountNum = get(row, 'Account #')
-    const portStatus = get(row, 'Port Status')
-    const portDate = get(row, 'Port Date Confirmed')
-    const mainPortNum = get(row, 'Main Porting Number')
-    const additionalNums = get(row, 'Additional #s to Port')
-    const street = get(row, 'Biz Street Address')
-    const city = get(row, 'Biz City')
-    const state = get(row, 'Biz State')
-    const zip = get(row, 'Biz Zip Code')
-
-    // Skip template/header rows
-    if (bizName.startsWith('***') || bizName.startsWith('FORMS')) continue
-    if (!bizName && !pocName && !pocEmail) continue
-
-    if (rawStatus) uniqueStatuses.add(rawStatus)
-
-    // Build combined notes
-    const noteParts: string[] = []
-    if (notes) noteParts.push(notes)
-    if (whiteboarding) noteParts.push(`Whiteboarding:\n${whiteboarding}`)
-    if (street || city) noteParts.push(`Address: ${[street, city, state, zip].filter(Boolean).join(', ')}`)
-    if (ecpd) noteParts.push(`ECPD #: ${ecpd}`)
-    if (leadId) noteParts.push(`Lead ID: ${leadId}`)
-    if (carrier) noteParts.push(`Carrier: ${carrier}`)
-    if (accountNum) noteParts.push(`Account #: ${accountNum}`)
-    if (portStatus) noteParts.push(`Port Status: ${portStatus}`)
-    if (portDate) noteParts.push(`Port Date: ${portDate}`)
-    if (mainPortNum) noteParts.push(`Main Porting #: ${mainPortNum}`)
-    if (additionalNums) noteParts.push(`Additional #s: ${additionalNums}`)
-
-    // Devices
-    const devices = [
-      ...parseDeviceCell(get(row, 'T67LTE IMEIs'), 'Desk Phone', 'Yealink'),
-      ...parseDeviceCell(get(row, 'MAC IDs'), 'Device', null),
-      ...parseDeviceCell(get(row, 'MCs'), 'Mobile Client', null),
-      ...parseDeviceCell(get(row, 'Native Dialers'), 'Phone', null),
-      ...parseDeviceCell(get(row, 'Second Numbers'), 'Phone', null),
-      ...parseDeviceCell(get(row, 'Routers'), 'Router', 'Verizon'),
-      ...parseDeviceCell(get(row, 'Tablets'), 'Tablet', null),
-    ]
-
-    const contactName = pocName || bizName
-    const valid = Boolean(contactName)
-
-    rows.push({
-      name: contactName,
-      company: bizName || '',
-      email: pocEmail,
-      phone: pocPhone,
-      notes: noteParts.join('\n\n'),
-      stage: 'lead', // default — will be overridden by statusMapping
-      rawStatus,
-      devices,
-      valid,
-      skipReason: !contactName ? 'No name' : undefined,
-    })
-  }
-
-  return { rows, uniqueStatuses: Array.from(uniqueStatuses).sort() }
-}
-
 export default function ImportContactsPage() {
   const fileRef = useRef<HTMLInputElement>(null)
   const [step, setStep] = useState<'upload' | 'map' | 'preview' | 'done'>('upload')
-  const [rows, setRows] = useState<ParsedRow[]>([])
+  const [rows, setRows] = useState<AirtableImportRow[]>([])
   const [uniqueStatuses, setUniqueStatuses] = useState<string[]>([])
-  const [statusMapping, setStatusMapping] = useState<StatusMapping>({})
+  const [statusMapping, setStatusMapping] = useState<AirtableStatusMapping>({})
   const [importing, setImporting] = useState(false)
   const [result, setResult] = useState<{ imported: number; skipped: number; devices_imported?: number; errors: string[] } | null>(null)
   const [fileName, setFileName] = useState('')
+  const [parseError, setParseError] = useState<string | null>(null)
 
   function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0]
     if (!file) return
+    setParseError(null)
     setFileName(file.name)
     const reader = new FileReader()
     reader.onload = (ev) => {
-      const text = ev.target?.result as string
-      const { rows: parsed, uniqueStatuses: statuses } = parseAirtableCSV(text)
-      setRows(parsed)
-      setUniqueStatuses(statuses)
-      // Default status mapping
-      const defaultMap: StatusMapping = {}
-      statuses.forEach((s) => {
-        const lower = s.toLowerCase()
-        if (lower.includes('initial') || lower.includes('lead') || lower.includes('new')) defaultMap[s] = 'lead'
-        else if (lower.includes('qualif')) defaultMap[s] = 'qualified'
-        else if (lower.includes('proposal') || lower.includes('quote')) defaultMap[s] = 'proposal'
-        else if (lower.includes('negotiat') || lower.includes('port')) defaultMap[s] = 'negotiation'
-        else if (lower.includes('active') || lower.includes('won') || lower.includes('complete') || lower.includes('moved')) defaultMap[s] = 'closed_won'
-        else if (lower.includes('lost') || lower.includes('dead') || lower.includes('cancel')) defaultMap[s] = 'closed_lost'
-        else defaultMap[s] = 'lead'
-      })
-      setStatusMapping(defaultMap)
-      setStep(statuses.length > 0 ? 'map' : 'preview')
+      try {
+        const text = String(ev.target?.result ?? '')
+        const { rows: parsed, uniqueStatuses: statuses } = parseAirtableContactsCsv(text)
+        if (parsed.length === 0) {
+          setParseError('No importable Airtable rows were found in this file.')
+          return
+        }
+
+        setRows(parsed)
+        setUniqueStatuses(statuses)
+        setStatusMapping(buildDefaultStatusMapping(statuses))
+        setStep(statuses.length > 0 ? 'map' : 'preview')
+      } catch (error) {
+        setParseError(error instanceof Error ? error.message : 'Unable to parse this Airtable export.')
+      }
     }
     reader.readAsText(file)
   }
 
-  function applyStatusMapping(): ParsedRow[] {
+  function applyStatusMapping(): AirtableImportRow[] {
     return rows.map((r) => ({
       ...r,
       stage: (r.rawStatus && statusMapping[r.rawStatus]) ? statusMapping[r.rawStatus] : 'lead',
@@ -244,7 +89,16 @@ export default function ImportContactsPage() {
     })
 
     const data = await res.json()
-    setResult(data)
+    setResult(
+      res.ok
+        ? data
+        : {
+            imported: 0,
+            skipped: 0,
+            devices_imported: 0,
+            errors: [data?.error ?? `Import failed (${res.status})`],
+          }
+    )
     setStep('done')
     setImporting(false)
   }
@@ -298,6 +152,12 @@ export default function ImportContactsPage() {
               Choose CSV file
             </button>
             <input ref={fileRef} type="file" accept=".csv,.tsv,text/csv,text/tab-separated-values" className="hidden" onChange={handleFile} />
+
+            {parseError && (
+              <div className="max-w-lg mx-auto text-left p-3 bg-[#FF6B6B]/10 border border-[#FF6B6B]/20 rounded-xl">
+                <p className="text-sm text-[#FF6B6B]">{parseError}</p>
+              </div>
+            )}
 
             {/* Sensitive data notice */}
             <div className="flex items-start gap-2 text-left p-3 bg-[#F59E0B]/10 border border-[#F59E0B]/20 rounded-xl max-w-lg mx-auto">

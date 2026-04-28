@@ -1,4 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
+import { requireAdmin } from '@/lib/auth-guard'
 import { getSupabaseAdmin } from '@/lib/ticket-triage'
 
 type PipelineStage = 'lead' | 'qualified' | 'proposal' | 'negotiation' | 'closed_won' | 'closed_lost'
@@ -32,6 +33,9 @@ function chunkArray<T>(arr: T[], size: number): T[][] {
 
 export async function POST(req: NextRequest): Promise<NextResponse> {
   try {
+    const { errorResponse } = await requireAdmin()
+    if (errorResponse) return errorResponse
+
     const { contacts } = await req.json() as { contacts: ImportContact[] }
 
     if (!Array.isArray(contacts) || contacts.length === 0) {
@@ -65,9 +69,15 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       }
     }
 
+    const seenIncomingEmails = new Set<string>()
     const toInsert = valid.filter((c) => {
       if (!c.email) return true // no email — always import (no dupe check possible)
-      return !existingEmails.has(c.email.toLowerCase().trim())
+      const normalizedEmail = c.email.toLowerCase().trim()
+      if (existingEmails.has(normalizedEmail) || seenIncomingEmails.has(normalizedEmail)) {
+        return false
+      }
+      seenIncomingEmails.add(normalizedEmail)
+      return true
     })
 
     const dupeSkipped = valid.length - toInsert.length
