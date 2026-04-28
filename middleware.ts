@@ -14,7 +14,7 @@ function buildRedirect(request: NextRequest, destination: string) {
   return NextResponse.redirect(new URL(destination, request.url))
 }
 
-export async function proxy(request: NextRequest) {
+export async function middleware(request: NextRequest) {
   let response = NextResponse.next({
     request: {
       headers: request.headers,
