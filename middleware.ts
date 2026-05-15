@@ -1,6 +1,5 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
-import { isAuthBypassed } from '@/lib/dev-bypass'
 
 const supabaseUrl = (process.env.NEXT_PUBLIC_SUPABASE_URL ?? '').trim()
 const supabaseAnonKey = (process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? '').trim()
@@ -21,14 +20,6 @@ export async function middleware(request: NextRequest) {
       headers: request.headers,
     },
   })
-
-  if (isAuthBypassed()) {
-    // In bypass mode we still let users hit /crm/login and /portal/login so they
-    // can establish a real Supabase session — that session is what RLS uses for
-    // browser-direct queries (auth.role() = 'authenticated'). Without it, writes
-    // to crm_* tables silently fail with 401 from the Supabase REST API.
-    return response
-  }
 
   const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
     cookies: {
