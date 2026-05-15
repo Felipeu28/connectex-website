@@ -1,12 +1,11 @@
 import { NextResponse } from 'next/server'
-import { getSupabaseAdmin } from '@/lib/ticket-triage'
+import { createAdminClient } from '@/lib/supabase'
 
-// Public endpoint — no auth. Only returns visible partners.
 export const revalidate = 60
 
 export async function GET() {
   try {
-    const admin = getSupabaseAdmin()
+    const admin = createAdminClient()
     const { data, error } = await admin
       .from('partners')
       .select('id, name, category, description, website, logo_url, color, featured, sort_order')
@@ -14,7 +13,6 @@ export async function GET() {
       .order('featured', { ascending: false })
       .order('sort_order', { ascending: true })
       .order('name', { ascending: true })
-
     if (error) {
       console.error('Partners public GET error:', error)
       return NextResponse.json([], { status: 200 })
