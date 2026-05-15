@@ -1,7 +1,7 @@
 -- Migration 009: Client portal auth, AI chat, and knowledge base foundation
 -- Run this in Supabase SQL editor (Dashboard > SQL Editor > New query)
 
--- ─── Ticket enhancements ────────────────────────────────────────────────────
+-- ─── Ticket enhancements ──────────────────────────────────────────────────
 
 -- Link tickets to Supabase auth users (set on first portal login or when ticket created while authenticated)
 ALTER TABLE tickets
@@ -27,7 +27,7 @@ ALTER TABLE ticket_messages
   ADD CONSTRAINT ticket_messages_sender_type_check
   CHECK (sender_type IN ('client', 'admin', 'ai'));
 
--- ─── Client product inventory ───────────────────────────────────────────────
+-- ─── Client product inventory ──────────────────────────────────────────────
 -- Allows Mark to assign devices/products to client email addresses.
 -- Portal dashboard surfaces these on login; AI triage pre-loads as context.
 
@@ -59,7 +59,7 @@ DO $$ BEGIN
   END IF;
 END $$;
 
--- ─── Knowledge base documents ───────────────────────────────────────────────
+-- ─── Knowledge base documents ──────────────────────────────────────────────
 -- Mark uploads PDF/docs here. AI triage + chat queries by category.
 
 CREATE TABLE IF NOT EXISTS kb_documents (
