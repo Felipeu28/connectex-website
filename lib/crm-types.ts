@@ -1,8 +1,11 @@
 export interface Contact {
   id: string
-  name: string
+  name: string                 // computed: first_name + ' ' + last_name (legacy)
+  first_name: string | null
+  last_name: string | null
   email: string | null
   phone: string | null
+  phone_country_code: string | null   // e.g. "+1", "+44", "+234"
   company: string | null
   title: string | null
   source: 'manual' | 'website' | 'referral' | 'networking' | 'cold'
@@ -124,6 +127,8 @@ export interface Ticket {
   human_took_over: boolean
   human_took_over_at: string | null
   user_id: string | null
+  /** Staff member assigned to handle this ticket (FK → crm_staff.id). */
+  assigned_staff_id: string | null
   created_at: string
   updated_at: string
   contact?: { id: string; name: string; email: string | null } | null
