@@ -253,3 +253,35 @@ These require design decisions or are lower risk:
 | Fix ESLint errors in campaigns + contact-detail pages | Low |
 | Add error handling to CRM page data fetches | Low |
 | Add index on `crm_sequence_enrollments(sequence_id)` | Low |
+
+---
+
+## 10. May 15 2026 — Partners, Ticketing, Persistence Sweep
+
+**Branch:** `claude/add-partners-ticketing-crm-Ph2No`
+
+### Fixed
+- **`crm_sequences` 401, "campaigns/sequences don't save"** — root cause: when `DEV_BYPASS_AUTH=1`, middleware redirected `/crm/login` → `/crm/dashboard`, so users could never establish a Supabase session. Browser-direct writes to RLS-locked tables silently 401'd. Middleware no longer redirects login during bypass. Campaign + sequence save/list/delete also rewired through new admin-API endpoints (`/api/crm/campaigns` GET + POST action=save|delete, `/api/crm/sequences` GET/POST, `/api/crm/sequences/[id]` PATCH/DELETE, `/api/crm/sequences/enroll`).
+- **`/api/crm/knowledge-base` 500** — better diagnostics (returns helpful "migration 009 not applied" message instead of opaque "Failed to fetch documents"). Now also supports multipart PDF upload with text extraction via `pdf-parse`.
+- **Article creator hang** — Gemini `maxOutputTokens` raised from 2400 → 8192. The previous limit truncated long articles mid-body before the `<<<END>>>` tag, so the article was silently dropped. Truncation + safety-block + empty-response cases now surface a real error to the chat panel.
+- **`/api/crm/ai-generate` 502** — already surfacing Gemini failure details; nothing to change here. Most 502s were Gemini-side transient errors visible in logs.
+- **Airtable / CSV upload of users** — `ContactImportModal` was inserting row-by-row through the anon Supabase client (RLS-blocked when not logged in). Switched to bulk POST `/api/crm/contacts/import` which uses the service-role admin client.
+
+### Added
+- **Partners CRM tab** — new `/crm/partners` page with add/edit/delete, featured/visible toggles, reorder. Backed by `partners` table (migration 011). Public `/partners` page now reads from DB with `revalidate=60`.
+- **Ticketing self-serve KB + AI chat** — `/ticketing` redesigned with three tabs:
+  - **Browse help**: searchable walkthroughs (phone setup, voicemail, devices, M365). Content lives in `lib/knowledge/walkthroughs.ts`.
+  - **Ask the AI**: Gemini chat grounded in walkthrough KB + uploaded `kb_documents`. New `/api/ticketing/chat`.
+  - **Open a ticket**: new "What do you need help with?" selector with `Request a walkthrough` option that auto-prefixes the email subject and bumps priority.
+- **PDF upload to knowledge base** — `/api/crm/knowledge-base` POST accepts `multipart/form-data`; PDFs uploaded to `kb-documents` bucket and parsed with `pdf-parse` for AI-readable text. Ticket attachments now accept PDFs and docs (not just images).
+- **Auto-prefixed email subjects** — new ticket emails to Mark are tagged by help type (e.g. `Re: [Walkthrough request] Set up new One Talk phone`) so he can triage from his inbox.
+
+### Files touched
+- New: `app/api/crm/partners/{route.ts,[id]/route.ts,reorder/route.ts}`, `app/api/partners/public/route.ts`, `app/api/crm/sequences/{route.ts,[id]/route.ts,enroll/route.ts}`, `app/api/ticketing/chat/route.ts`, `app/crm/partners/page.tsx`, `components/ticketing/{TicketingPortal,HelpBrowse,AiChat}.tsx`, `lib/{partner-types,knowledge/walkthroughs}.ts`, `supabase/migrations/011_partners.sql`
+- Modified: `middleware.ts`, `app/api/crm/{campaigns,knowledge-base}/route.ts`, `app/api/blog/ai-assist/route.ts`, `app/crm/{campaigns,sequences,knowledge-base}/page.tsx`, `app/partners/page.tsx`, `components/crm/CRMShell.tsx`, `components/ticketing/TicketForm.tsx`, `components/crm/ContactImportModal.tsx`
+
+### Required Supabase steps before deploy
+1. Run migration `011_partners.sql`.
+2. Verify migration `009_portal_and_ai_chat.sql` was applied (creates `kb_documents` table + `kb-documents` storage bucket). Without it, KB upload still returns a helpful error rather than crashing.
+3. Confirm `SUPABASE_SERVICE_ROLE_KEY`, `GEMINI_API_KEY`, `RESEND_API_KEY` are set in Vercel project env vars.
+4. Have Mark log in once at `/crm/login` (`info@connectex.net` / password) to establish a Supabase session — needed for browser-direct read paths (contact search inside campaign editor, etc.).

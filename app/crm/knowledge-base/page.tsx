@@ -9,6 +9,7 @@ interface KBDocument {
   title: string
   category: 'verizon' | 'microsoft365' | 'ucaas' | 'general'
   file_name: string | null
+  file_url?: string | null
   created_at: string
   updated_at: string
 }
@@ -34,6 +35,7 @@ export default function KnowledgeBasePage() {
   const [category, setCategory] = useState<string>('general')
   const [content, setContent] = useState('')
   const [fileName, setFileName] = useState<string | null>(null)
+  const [pendingFile, setPendingFile] = useState<File | null>(null)
   const [saving, setSaving] = useState(false)
   const [formError, setFormError] = useState<string | null>(null)
   const fileRef = useRef<HTMLInputElement>(null)
@@ -56,32 +58,63 @@ export default function KnowledgeBasePage() {
     if (!file) return
     setFileName(file.name)
     if (!title) setTitle(file.name.replace(/\.[^.]+$/, ''))
-    const text = await file.text()
-    setContent(text)
+
+    const isPdf = file.type === 'application/pdf' || /\.pdf$/i.test(file.name)
+    if (isPdf) {
+      // Defer to server-side extraction. Keep the File for upload on submit.
+      setPendingFile(file)
+      setContent(`(PDF "${file.name}" attached — text will be extracted on save)`)
+    } else {
+      setPendingFile(file)
+      try {
+        const text = await file.text()
+        setContent(text)
+      } catch {
+        setContent(`(File "${file.name}" attached — content will be processed on save)`)
+      }
+    }
   }
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
     setFormError(null)
-    if (!title.trim() || !content.trim()) {
-      setFormError('Title and content are required.')
+    if (!title.trim()) {
+      setFormError('Title is required.')
+      return
+    }
+    if (!pendingFile && !content.trim()) {
+      setFormError('Provide either a file or pasted content.')
       return
     }
     setSaving(true)
-    const res = await fetch('/api/crm/knowledge-base', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ title: title.trim(), category, content: content.trim(), file_name: fileName }),
-    })
+
+    let res: Response
+    if (pendingFile) {
+      const fd = new FormData()
+      fd.append('title', title.trim())
+      fd.append('category', category)
+      fd.append('file', pendingFile)
+      // Allow text fallback too for cases where extraction fails
+      if (content.trim() && !content.startsWith('(')) fd.append('content', content.trim())
+      res = await fetch('/api/crm/knowledge-base', { method: 'POST', body: fd })
+    } else {
+      res = await fetch('/api/crm/knowledge-base', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title: title.trim(), category, content: content.trim(), file_name: fileName }),
+      })
+    }
+
     if (res.ok) {
       setTitle('')
       setCategory('general')
       setContent('')
       setFileName(null)
+      setPendingFile(null)
       setShowForm(false)
       loadDocs()
     } else {
-      const err = await res.json()
+      const err = await res.json().catch(() => ({ error: 'Failed to save document.' }))
       setFormError(err.error ?? 'Failed to save document.')
     }
     setSaving(false)
@@ -173,7 +206,7 @@ export default function KnowledgeBasePage() {
 
             {/* File upload */}
             <div className="space-y-1.5">
-              <label className="text-xs text-[var(--color-text-muted)]">Upload file (optional — .txt or .md)</label>
+              <label className="text-xs text-[var(--color-text-muted)]">Upload file (optional — PDF, .txt or .md)</label>
               <div className="flex items-center gap-3">
                 <button
                   type="button"
@@ -198,7 +231,7 @@ export default function KnowledgeBasePage() {
                 <input
                   ref={fileRef}
                   type="file"
-                  accept=".txt,.md,text/plain,text/markdown"
+                  accept=".txt,.md,.pdf,text/plain,text/markdown,application/pdf"
                   onChange={handleFileUpload}
                   className="hidden"
                 />

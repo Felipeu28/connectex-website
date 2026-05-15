@@ -11,9 +11,20 @@ interface FormData {
   name: string
   email: string
   company: string
+  helpType: HelpType
+  walkthroughTopic: string
   subject: string
   description: string
 }
+
+type HelpType = 'general' | 'walkthrough' | 'device' | 'ticket-question'
+
+const HELP_TYPES: { key: HelpType; label: string; subjectPrefix: string; placeholder: string }[] = [
+  { key: 'general', label: 'General IT support', subjectPrefix: '', placeholder: 'Brief summary of your issue' },
+  { key: 'walkthrough', label: 'Request a walkthrough (phone / device setup)', subjectPrefix: 'Walkthrough request', placeholder: 'e.g. Set up my new One Talk desk phone' },
+  { key: 'device', label: 'Question about a device', subjectPrefix: 'Device question', placeholder: 'e.g. Polycom VVX 400 — no dial tone' },
+  { key: 'ticket-question', label: 'Question about an existing ticket', subjectPrefix: 'Ticket follow-up', placeholder: 'Reference your ticket number or topic' },
+]
 
 export function TicketForm() {
   const router = useRouter()
@@ -25,11 +36,24 @@ export function TicketForm() {
   const {
     register,
     handleSubmit,
+    watch,
     formState: { errors },
-  } = useForm<FormData>()
+  } = useForm<FormData>({
+    defaultValues: { helpType: 'general', walkthroughTopic: '', subject: '' },
+  })
+
+  const helpType = watch('helpType') as HelpType
+  const subject = watch('subject')
+  const helpTypeConfig = HELP_TYPES.find((h) => h.key === helpType) ?? HELP_TYPES[0]
 
   function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0] ?? null
+    if (file && file.size > 10 * 1024 * 1024) {
+      setSubmitError('File exceeds 10MB limit.')
+      e.target.value = ''
+      return
+    }
+    setSubmitError(null)
     setSelectedFile(file)
     if (file && file.type.startsWith('image/')) {
       setPreview(URL.createObjectURL(file))
@@ -66,13 +90,30 @@ export function TicketForm() {
     setSubmitError(null)
 
     try {
-      // Upload image if provided
+      // Upload attachment if provided (any file type, not just images)
       let image_url: string | undefined
       if (selectedFile) {
         const url = await uploadFile(selectedFile)
         if (!url) throw new Error('Failed to upload attachment. Please try again.')
         image_url = url
       }
+
+      // Auto-build a useful subject. Format: "[Category] user-subject"
+      // For walkthrough requests, include the topic so Mark sees it instantly.
+      const cfg = HELP_TYPES.find((h) => h.key === data.helpType) ?? HELP_TYPES[0]
+      const userSubject = data.subject?.trim() || data.walkthroughTopic?.trim() || cfg.placeholder
+      const finalSubject = cfg.subjectPrefix
+        ? `[${cfg.subjectPrefix}] ${userSubject}`
+        : userSubject
+
+      // Prepend walkthrough/help-type marker to description so AI triage can detect it
+      const finalDescription = data.helpType === 'walkthrough'
+        ? `**Walkthrough request:** ${data.walkthroughTopic || 'general'}\n\n${data.description}`
+        : data.helpType === 'device'
+          ? `**Device question.**\n\n${data.description}`
+          : data.helpType === 'ticket-question'
+            ? `**Question about an existing ticket.**\n\n${data.description}`
+            : data.description
 
       const res = await fetch('/api/tickets', {
         method: 'POST',
@@ -81,9 +122,9 @@ export function TicketForm() {
           name: data.name,
           email: data.email,
           company: data.company || undefined,
-          subject: data.subject,
-          description: data.description,
-          priority: 'medium',
+          subject: finalSubject,
+          description: finalDescription,
+          priority: data.helpType === 'walkthrough' ? 'high' : 'medium',
           image_url,
         }),
       })
@@ -158,16 +199,61 @@ export function TicketForm() {
         />
       </div>
 
-      {/* Subject */}
+      {/* Help type */}
+      <div>
+        <label htmlFor="helpType" className={labelClasses}>
+          What do you need help with? <span className="text-[var(--color-cta)]">*</span>
+        </label>
+        <select
+          id="helpType"
+          className={inputClasses + ' appearance-none cursor-pointer'}
+          {...register('helpType', { required: true })}
+        >
+          {HELP_TYPES.map((h) => (
+            <option key={h.key} value={h.key}>{h.label}</option>
+          ))}
+        </select>
+        {helpType === 'walkthrough' && (
+          <p className="mt-2 text-xs text-[var(--color-accent)]">
+            Mark will reach out to schedule a screen-share walkthrough for setup.
+          </p>
+        )}
+      </div>
+
+      {/* Walkthrough topic (only when walkthrough selected) */}
+      {helpType === 'walkthrough' && (
+        <div>
+          <label htmlFor="walkthroughTopic" className={labelClasses}>
+            What do you want walked through? <span className="text-[var(--color-cta)]">*</span>
+          </label>
+          <input
+            id="walkthroughTopic"
+            type="text"
+            className={inputClasses}
+            placeholder="e.g. Setting up my new Verizon One Talk phone"
+            {...register('walkthroughTopic', {
+              required: helpType === 'walkthrough' ? 'Please describe what you want walked through' : false,
+            })}
+          />
+          {errors.walkthroughTopic && <p className={errorClasses} role="alert">{errors.walkthroughTopic.message}</p>}
+        </div>
+      )}
+
+      {/* Subject (auto-prefixed in email) */}
       <div>
         <label htmlFor="subject" className={labelClasses}>
           Subject <span className="text-[var(--color-cta)]">*</span>
+          {helpTypeConfig.subjectPrefix && (
+            <span className="ml-2 text-xs font-normal text-[var(--color-accent)]">
+              (sent as &ldquo;[{helpTypeConfig.subjectPrefix}] {subject || helpTypeConfig.placeholder}&rdquo;)
+            </span>
+          )}
         </label>
         <input
           id="subject"
           type="text"
           className={inputClasses}
-          placeholder="Brief summary of your issue"
+          placeholder={helpTypeConfig.placeholder}
           {...register('subject', { required: 'Subject is required' })}
           aria-invalid={errors.subject ? 'true' : 'false'}
         />
@@ -195,7 +281,7 @@ export function TicketForm() {
       {/* Attachment */}
       <div>
         <label className={labelClasses}>
-          Attachment <span className="text-[var(--color-text-muted)] text-xs">(optional)</span>
+          Attachment <span className="text-[var(--color-text-muted)] text-xs">(optional — image, PDF, or document up to 10MB)</span>
         </label>
           {selectedFile ? (
             <div className="flex items-center gap-2 rounded-xl bg-white/5 border border-[var(--color-accent)]/30 px-4 py-3">
@@ -219,14 +305,14 @@ export function TicketForm() {
             >
               <Upload className="w-4 h-4 text-[var(--color-text-muted)] shrink-0" aria-hidden="true" />
               <span className="text-[var(--color-text-muted)] text-sm truncate">
-                Upload screenshot or image
+                Upload screenshot, PDF, or document
               </span>
             </label>
           )}
           <input
             id="image"
             type="file"
-            accept="image/*"
+            accept="image/*,application/pdf,.pdf,.doc,.docx,.txt"
             className="sr-only"
             onChange={handleFileChange}
           />

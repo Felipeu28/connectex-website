@@ -169,7 +169,11 @@ async function callGeminiMultiTurn(
   const body = {
     contents,
     systemInstruction: { parts: [{ text: CHAT_SYSTEM_INSTRUCTION }] },
-    generationConfig: { maxOutputTokens: 2400, temperature: 0.75 },
+    // 8192 — Gemini 2.0 Flash hard cap. Required for a 1000-1400 word article
+    // (~2000 tokens) plus JSON wrapper plus any preamble. The previous 2400
+    // limit truncated long articles mid-body, so parseArticleFromResponse
+    // never found the closing <<<END>>> tag and the article silently vanished.
+    generationConfig: { maxOutputTokens: 8192, temperature: 0.75 },
   }
 
   const res = await fetch(
@@ -189,6 +193,15 @@ async function callGeminiMultiTurn(
 
   const data = await res.json()
   const text: string = data?.candidates?.[0]?.content?.parts?.[0]?.text ?? ''
+  const finishReason: string | undefined = data?.candidates?.[0]?.finishReason
+  const blockReason: string | undefined = data?.promptFeedback?.blockReason
+
+  if (blockReason) {
+    return { ok: false, text: '', error: `Gemini blocked the prompt: ${blockReason}` }
+  }
+  if (!text) {
+    return { ok: false, text: '', error: `Gemini returned empty response${finishReason ? ` (finish: ${finishReason})` : ''}.` }
+  }
   return { ok: true, text }
 }
 
@@ -200,6 +213,12 @@ function parseArticleFromResponse(text: string): Record<string, string> | null {
   } catch {
     return null
   }
+}
+
+// If the model started an article block but ran out of tokens before the
+// closing tag, surface that explicitly rather than silently dropping it.
+function detectTruncatedArticle(text: string): boolean {
+  return text.includes('<<<ARTICLE>>>') && !text.includes('<<<END>>>')
 }
 
 export async function POST(request: NextRequest) {
@@ -235,14 +254,25 @@ export async function POST(request: NextRequest) {
       }
 
       const article = parseArticleFromResponse(result.text)
+      const truncated = !article && detectTruncatedArticle(result.text)
+
       // Strip the article block from the displayed text
       const displayText = result.text
         .replace(/<<<ARTICLE>>>[\s\S]*?<<<END>>>/g, '')
+        .replace(/<<<ARTICLE>>>[\s\S]*$/g, '') // strip dangling opener if truncated
         .trim()
+
+      let chatText = displayText
+      if (article) {
+        chatText = displayText || 'Your article is ready! I\'ve filled in the title, body, excerpt, meta description, and category. Review it and let me know if you\'d like any changes.'
+      } else if (truncated) {
+        chatText = (displayText ? displayText + '\n\n' : '') +
+          "(The article was cut off before I could finish. Could you ask me to write it again? I'll keep it tighter so it fits.)"
+      }
 
       return NextResponse.json({
         ok: true,
-        text: displayText || (article ? 'Your article is ready! I\'ve filled in the title, body, excerpt, meta description, and category. Review it and let me know if you\'d like any changes.' : ''),
+        text: chatText,
         article,
       })
     }

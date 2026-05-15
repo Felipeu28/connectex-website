@@ -2,7 +2,6 @@
 
 import { useState, useRef } from 'react'
 import { X, Upload, AlertCircle, CheckCircle, FileText, ChevronDown } from 'lucide-react'
-import { createSupabaseBrowser } from '@/lib/supabase-browser'
 import type { PipelineStage } from '@/lib/crm-types'
 
 interface ImportRow {
@@ -132,39 +131,43 @@ export function ContactImportModal({ open, onClose, onImported }: Props) {
 
   async function runImport() {
     setImporting(true)
-    const supabase = createSupabaseBrowser()
+    const errors: string[] = []
     let inserted = 0
     let skipped = 0
-    const errors: string[] = []
 
-    for (const row of rows) {
-      if (!row.name && !row.email) { skipped++; continue }
-      const name = row.name || row.email.split('@')[0]
-
-      // Dedup by email
-      if (row.email) {
-        const { count } = await supabase
-          .from('crm_contacts')
-          .select('id', { count: 'exact', head: true })
-          .eq('email', row.email.toLowerCase().trim())
-        if (count && count > 0) { skipped++; continue }
-      }
-
-      const { error: insertError } = await supabase.from('crm_contacts').insert({
-        name,
+    // Build payload for the bulk import API (handles 1000+ contacts server-side
+    // via the service-role client, so RLS / session state can't block it).
+    const payload = rows
+      .filter((row) => row.name || row.email)
+      .map((row) => ({
+        name: row.name || (row.email ? row.email.split('@')[0] : 'Unnamed'),
         email: row.email?.toLowerCase().trim() || null,
         phone: row.phone || null,
         company: row.company || null,
         title: row.title || null,
         notes: row.notes || null,
-        source: 'manual' as const,
+        source: 'airtable' as const,
         stage: 'lead' as PipelineStage,
-        deal_value: 0,
-        tags: [],
-      })
+      }))
 
-      if (insertError) { errors.push(`${name}: ${insertError.message}`); skipped++ }
-      else { inserted++ }
+    skipped += rows.length - payload.length
+
+    try {
+      const res = await fetch('/api/crm/contacts/import', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ contacts: payload }),
+      })
+      const body = await res.json().catch(() => null)
+      if (!res.ok) {
+        errors.push(body?.error ?? `Import failed (${res.status})`)
+      } else {
+        inserted = body?.inserted ?? 0
+        skipped += body?.skipped ?? 0
+        if (Array.isArray(body?.errors)) errors.push(...body.errors)
+      }
+    } catch (err) {
+      errors.push(err instanceof Error ? err.message : 'Network error')
     }
 
     setResult({ inserted, skipped, errors })
