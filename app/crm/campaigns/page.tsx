@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { CRMShell } from '@/components/crm/CRMShell'
+import { SendStatusBanner } from '@/components/crm/SendStatusBanner'
 import { createSupabaseBrowser } from '@/lib/supabase-browser'
 import { PIPELINE_STAGES, type Campaign, type PipelineStage } from '@/lib/crm-types'
 import { Plus, Sparkles, Pencil, Trash2, X, Eye, Send, Users, Filter, Loader2, CheckCircle2, AlertCircle, Search, Clock, UserCheck, Upload } from 'lucide-react'
@@ -36,6 +37,11 @@ export default function CampaignsPage() {
   const [docContext, setDocContext] = useState('')
   const [docFileName, setDocFileName] = useState<string | null>(null)
   const docFileRef = useRef<HTMLInputElement>(null)
+
+  // Test send state (editor)
+  const [testEmail, setTestEmail] = useState('')
+  const [testSending, setTestSending] = useState(false)
+  const [testResult, setTestResult] = useState<{ ok: boolean; message: string } | null>(null)
 
   // Send modal state
   const [sendModalOpen, setSendModalOpen] = useState(false)
@@ -146,6 +152,8 @@ export default function CampaignsPage() {
     setAiPrompt('')
     setAiError(null)
     setSaveError(null)
+    setTestEmail('')
+    setTestResult(null)
     setEditorOpen(true)
   }
 
@@ -178,6 +186,69 @@ export default function CampaignsPage() {
       setSaveError(err instanceof Error ? err.message : 'Save failed')
     } finally {
       setSaving(false)
+    }
+  }
+
+  async function sendTestEmail() {
+    if (!testEmail.trim() || !subject.trim() || !body.trim() || testSending) return
+    setTestSending(true)
+    setTestResult(null)
+    try {
+      // The test send route accepts a draft campaign with just subject/body —
+      // save the in-memory editor draft first so the route can fetch it.
+      let campaignId = editCampaign?.id
+      if (!campaignId) {
+        const saveRes = await fetch('/api/crm/campaigns', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'save',
+            name: name.trim() || `Draft ${new Date().toLocaleString()}`,
+            subject: subject.trim(),
+            body: body.trim(),
+            status: 'draft',
+          }),
+        })
+        const saved = await saveRes.json().catch(() => null)
+        if (!saveRes.ok || !saved?.id) {
+          throw new Error(saved?.error ?? 'Couldn\'t save draft for test send')
+        }
+        campaignId = saved.id
+        setEditCampaign(saved as Campaign)
+      } else {
+        // Push latest edits before testing
+        await fetch('/api/crm/campaigns', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'save',
+            id: campaignId,
+            name: name.trim(),
+            subject: subject.trim(),
+            body: body.trim(),
+            status: 'draft',
+          }),
+        })
+      }
+
+      const res = await fetch('/api/crm/campaigns/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ campaign_id: campaignId, test_email: testEmail.trim() }),
+      })
+      const data = await res.json().catch(() => null)
+      if (!res.ok || !data?.success) {
+        setTestResult({
+          ok: false,
+          message: data?.errors?.[0] ?? data?.error ?? `Test send failed (${res.status})`,
+        })
+      } else {
+        setTestResult({ ok: true, message: `Test sent to ${testEmail.trim()}. Check your inbox.` })
+      }
+    } catch (err) {
+      setTestResult({ ok: false, message: err instanceof Error ? err.message : 'Test send failed' })
+    } finally {
+      setTestSending(false)
     }
   }
 
@@ -265,17 +336,30 @@ export default function CampaignsPage() {
     setSending(true)
     setSendResult(null)
 
-    // Schedule mode: just save scheduled_at, don't send now
+    // Schedule mode: just save scheduled_at, don't send now.
+    // Routes through admin API so RLS / session state can't block it,
+    // and stamps recipients_filter so the cron knows who to send to.
     if (scheduleMode) {
       if (!scheduledAt) { setSending(false); return }
       try {
-        const supabase = createSupabaseBrowser()
-        await supabase
-          .from('crm_campaigns')
-          .update({ status: 'scheduled', scheduled_at: new Date(scheduledAt).toISOString(), updated_at: new Date().toISOString() })
-          .eq('id', sendCampaign.id)
-        setSendResult({ success: true, sent: 0, failed: 0 })
-        load()
+        const filterPayload = recipientFilter === 'all' ? { type: 'all' } : recipientFilter
+        const res = await fetch('/api/crm/campaigns', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            action: 'schedule',
+            id: sendCampaign.id,
+            scheduled_at: new Date(scheduledAt).toISOString(),
+            recipients_filter: filterPayload,
+          }),
+        })
+        if (!res.ok) {
+          const data = await res.json().catch(() => null)
+          setSendResult({ success: false, sent: 0, failed: 0, errors: [data?.error ?? 'Failed to schedule campaign'] })
+        } else {
+          setSendResult({ success: true, sent: 0, failed: 0 })
+          load()
+        }
       } catch {
         setSendResult({ success: false, sent: 0, failed: 0, errors: ['Failed to schedule campaign'] })
       }
@@ -325,6 +409,8 @@ export default function CampaignsPage() {
             New Campaign
           </button>
         </div>
+
+        <SendStatusBanner />
 
         {/* Campaign List */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
@@ -542,6 +628,41 @@ export default function CampaignsPage() {
                 <span className="break-words">Couldn&apos;t save: {saveError}</span>
               </div>
             )}
+
+            {/* Send test to me */}
+            <div className="mt-4 p-3 rounded-xl bg-white/5 border border-white/10 space-y-2">
+              <div className="flex items-center gap-2">
+                <UserCheck className="w-4 h-4 text-[var(--color-accent)]" />
+                <span className="text-xs font-semibold text-white uppercase tracking-wide">Send a test first</span>
+              </div>
+              <p className="text-xs text-[var(--color-text-muted)]">
+                Always test deliverability before blasting your list. {'{{name}}'} will resolve to &ldquo;there&rdquo; in the test.
+              </p>
+              <div className="flex gap-2">
+                <input
+                  type="email"
+                  value={testEmail}
+                  onChange={(e) => setTestEmail(e.target.value)}
+                  placeholder="you@example.com"
+                  className="flex-1 rounded-lg bg-white/5 border border-white/10 px-3 py-2 text-sm text-white placeholder-[var(--color-text-muted)] focus:outline-none focus:ring-2 focus:ring-[var(--color-accent)]"
+                />
+                <button
+                  type="button"
+                  onClick={sendTestEmail}
+                  disabled={testSending || !testEmail.trim() || !subject.trim() || !body.trim()}
+                  className="inline-flex items-center gap-2 px-3 py-2 rounded-lg bg-[var(--color-accent)] hover:bg-[var(--color-accent)]/90 disabled:opacity-50 text-black text-sm font-medium transition-colors"
+                >
+                  {testSending ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
+                  Send test
+                </button>
+              </div>
+              {testResult && (
+                <p className={`text-xs flex items-center gap-1.5 ${testResult.ok ? 'text-[var(--color-accent)]' : 'text-[#FF6B6B]'}`}>
+                  {testResult.ok ? <CheckCircle2 className="w-3.5 h-3.5" /> : <AlertCircle className="w-3.5 h-3.5" />}
+                  {testResult.message}
+                </p>
+              )}
+            </div>
 
             <div className="flex items-center justify-end gap-3 pt-4">
               <button onClick={() => setEditorOpen(false)} className="px-4 py-2.5 text-sm font-medium text-[var(--color-text-muted)] hover:text-white rounded-xl hover:bg-white/5 transition-colors">

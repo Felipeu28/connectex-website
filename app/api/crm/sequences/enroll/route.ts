@@ -19,26 +19,47 @@ export async function POST(req: NextRequest) {
 
     const admin = getSupabaseAdmin()
 
-    // Skip already-enrolled contacts
-    const { data: existing } = await admin
-      .from('crm_sequence_enrollments')
-      .select('contact_id')
-      .eq('sequence_id', sequence_id)
-      .in('contact_id', contact_ids)
+    // Skip already-enrolled contacts and anyone unsubscribed
+    const [existingRes, unsubscribedRes] = await Promise.all([
+      admin
+        .from('crm_sequence_enrollments')
+        .select('contact_id')
+        .eq('sequence_id', sequence_id)
+        .in('contact_id', contact_ids),
+      admin
+        .from('crm_contacts')
+        .select('id')
+        .in('id', contact_ids)
+        .eq('unsubscribed', true),
+    ])
 
-    const existingSet = new Set((existing ?? []).map((r) => r.contact_id))
-    const toEnroll = contact_ids.filter((id) => !existingSet.has(id))
+    const existingSet = new Set((existingRes.data ?? []).map((r) => r.contact_id))
+    const unsubscribedSet = new Set((unsubscribedRes.data ?? []).map((r) => r.id))
+    const toEnroll = contact_ids.filter((id) => !existingSet.has(id) && !unsubscribedSet.has(id))
 
     if (toEnroll.length === 0) {
       return NextResponse.json({ enrolled: 0, skipped: contact_ids.length })
     }
+
+    // Look up first step's delay so we set next_send_at correctly
+    const { data: firstStep } = await admin
+      .from('crm_sequence_steps')
+      .select('delay_days')
+      .eq('sequence_id', sequence_id)
+      .eq('step_number', 1)
+      .maybeSingle()
+
+    const delayDays = firstStep?.delay_days ?? 0
+    const nextSendAt = new Date()
+    nextSendAt.setDate(nextSendAt.getDate() + delayDays)
 
     const { error } = await admin.from('crm_sequence_enrollments').insert(
       toEnroll.map((cid) => ({
         sequence_id,
         contact_id: cid,
         status: 'active',
-        current_step: 0,
+        current_step: 1,
+        next_send_at: nextSendAt.toISOString(),
       }))
     )
 

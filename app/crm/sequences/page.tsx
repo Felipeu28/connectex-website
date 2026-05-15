@@ -2,6 +2,7 @@
 
 import { useEffect, useState, useCallback, useRef } from 'react'
 import { CRMShell } from '@/components/crm/CRMShell'
+import { SendStatusBanner } from '@/components/crm/SendStatusBanner'
 import { createSupabaseBrowser } from '@/lib/supabase-browser'
 import { Plus, Play, Pause, Archive, ChevronDown, ChevronUp, Trash2, X, Users, Mail, Sparkles, Loader2, Pencil, UserPlus, CheckCircle, Upload } from 'lucide-react'
 import { clsx } from 'clsx'
@@ -277,7 +278,7 @@ Write a short, personal email (not salesy). Return JSON: {"subject": "...", "bod
         <div className="flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold text-white">Sequences</h1>
-            <p className="text-[var(--color-text-muted)] text-sm mt-0.5">Automated multi-step email sequences sent from your Gmail</p>
+            <p className="text-[var(--color-text-muted)] text-sm mt-0.5">Automated multi-step email sequences. Drips run hourly via Resend.</p>
           </div>
           <button
             onClick={openNew}
@@ -287,6 +288,8 @@ Write a short, personal email (not salesy). Return JSON: {"subject": "...", "bod
             New Sequence
           </button>
         </div>
+
+        <SendStatusBanner />
 
         {/* Sequences list */}
         {loading ? (

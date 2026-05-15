@@ -1,33 +1,36 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { Resend } from 'resend'
-import { createSupabaseServer } from '@/lib/supabase-server'
 import { requireAdmin } from '@/lib/auth-guard'
+import { getSupabaseAdmin } from '@/lib/ticket-triage'
+import { sendBulk, EmailSendError } from '@/lib/email-send'
+
+export const runtime = 'nodejs'
+export const maxDuration = 60
+
+interface Filter {
+  ids?: string[]
+  stage?: string
+  tags?: string[]
+}
 
 export async function POST(req: NextRequest) {
   const { errorResponse } = await requireAdmin()
   if (errorResponse) return errorResponse
 
   try {
-    const { campaign_id, filter } = await req.json()
+    const { campaign_id, filter, test_email } = (await req.json()) as {
+      campaign_id: string
+      filter?: Filter | 'all'
+      test_email?: string
+    }
 
     if (!campaign_id) {
       return NextResponse.json({ error: 'campaign_id is required' }, { status: 400 })
     }
 
-    const resendApiKey = process.env.RESEND_API_KEY
-    if (!resendApiKey) {
-      return NextResponse.json(
-        { error: 'Email sending not configured. Set RESEND_API_KEY in environment.' },
-        { status: 503 }
-      )
-    }
-
-    const resend = new Resend(resendApiKey)
-    const fromEmail = process.env.RESEND_FROM_EMAIL || 'Mark at Connectex <mark@connectex.net>'
-    const supabase = await createSupabaseServer()
+    const admin = getSupabaseAdmin()
 
     // Fetch the campaign
-    const { data: campaign, error: campaignError } = await supabase
+    const { data: campaign, error: campaignError } = await admin
       .from('crm_campaigns')
       .select('*')
       .eq('id', campaign_id)
@@ -37,94 +40,110 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: 'Campaign not found' }, { status: 404 })
     }
 
+    // ── Test send: skip status changes, send single email, no unsub footer ──
+    if (test_email) {
+      const result = await sendBulk(
+        {
+          subject: campaign.subject,
+          body: campaign.body,
+          recipients: [
+            { contact_id: null, name: 'Mark (test)', email: test_email, unsubscribe_token: null },
+          ],
+          context: { kind: 'test', tester_email: test_email },
+          skipUnsubscribeFooter: true,
+        },
+        admin
+      )
+      return NextResponse.json({
+        success: result.sent > 0,
+        sent: result.sent,
+        failed: result.failed,
+        errors: result.errors.map((e) => `${e.email}: ${e.reason}`),
+        test: true,
+      })
+    }
+
     if (campaign.status === 'sent') {
       return NextResponse.json({ error: 'Campaign has already been sent' }, { status: 400 })
     }
 
-    // Mark campaign as sending
-    await supabase
+    // Mark sending
+    await admin
       .from('crm_campaigns')
       .update({ status: 'sending', updated_at: new Date().toISOString() })
       .eq('id', campaign_id)
 
-    // Fetch contacts based on filter
-    let query = supabase
+    // Fetch contacts based on filter; skip unsubscribed
+    let query = admin
       .from('crm_contacts')
-      .select('id, name, email, company, stage, tags')
+      .select('id, name, email, unsubscribe_token, unsubscribed')
       .not('email', 'is', null)
+      .or('unsubscribed.is.null,unsubscribed.eq.false')
 
     if (filter && filter !== 'all') {
-      if (filter.ids && filter.ids.length > 0) {
-        query = query.in('id', filter.ids)
-      } else if (filter.stage) {
-        query = query.eq('stage', filter.stage)
-      } else if (filter.tags && filter.tags.length > 0) {
-        query = query.overlaps('tags', filter.tags)
-      }
+      if (filter.ids && filter.ids.length > 0) query = query.in('id', filter.ids)
+      else if (filter.stage) query = query.eq('stage', filter.stage)
+      else if (filter.tags && filter.tags.length > 0) query = query.overlaps('tags', filter.tags)
     }
 
     const { data: contacts, error: contactsError } = await query
 
     if (contactsError) {
-      await supabase
+      await admin
         .from('crm_campaigns')
         .update({ status: 'draft', updated_at: new Date().toISOString() })
         .eq('id', campaign_id)
       return NextResponse.json({ error: 'Failed to fetch contacts' }, { status: 500 })
     }
 
-    // Filter out contacts without valid emails
-    const validContacts = (contacts ?? []).filter(
-      (c) => c.email && c.email.includes('@')
-    )
+    const recipients = (contacts ?? []).map((c) => ({
+      contact_id: c.id,
+      name: c.name,
+      email: c.email as string,
+      unsubscribe_token: c.unsubscribe_token,
+    }))
 
-    if (validContacts.length === 0) {
-      await supabase
+    if (recipients.length === 0) {
+      await admin
         .from('crm_campaigns')
         .update({ status: 'draft', updated_at: new Date().toISOString() })
         .eq('id', campaign_id)
-      return NextResponse.json({ error: 'No contacts with valid emails match the filter' }, { status: 400 })
+      return NextResponse.json(
+        { error: 'No contacts with valid emails match the filter (also excludes unsubscribed)' },
+        { status: 400 }
+      )
     }
 
-    // Send emails
-    let successCount = 0
-    let failCount = 0
-    const errors: string[] = []
-
-    for (const contact of validContacts) {
-      try {
-        // Replace {{name}} placeholder with contact name
-        const personalizedBody = campaign.body.replace(
-          /\{\{name\}\}/gi,
-          contact.name || 'there'
-        )
-        const personalizedSubject = campaign.subject.replace(
-          /\{\{name\}\}/gi,
-          contact.name || 'there'
-        )
-
-        await resend.emails.send({
-          from: fromEmail,
-          to: contact.email!,
-          subject: personalizedSubject,
-          html: personalizedBody.replace(/\n/g, '<br>'),
-        })
-
-        successCount++
-      } catch (err) {
-        failCount++
-        const message = err instanceof Error ? err.message : 'Unknown error'
-        errors.push(`${contact.email}: ${message}`)
+    // Send via shared batched helper
+    let result
+    try {
+      result = await sendBulk(
+        {
+          subject: campaign.subject,
+          body: campaign.body,
+          recipients,
+          context: { kind: 'campaign', campaign_id },
+        },
+        admin
+      )
+    } catch (err) {
+      await admin
+        .from('crm_campaigns')
+        .update({ status: 'draft', updated_at: new Date().toISOString() })
+        .eq('id', campaign_id)
+      if (err instanceof EmailSendError) {
+        return NextResponse.json({ error: err.message }, { status: err.status })
       }
+      throw err
     }
 
-    // Update campaign status
-    await supabase
+    // Persist final status
+    await admin
       .from('crm_campaigns')
       .update({
         status: 'sent',
         sent_at: new Date().toISOString(),
-        sent_count: successCount,
+        sent_count: result.sent,
         recipients_filter: filter ?? { type: 'all' },
         updated_at: new Date().toISOString(),
       })
@@ -132,10 +151,10 @@ export async function POST(req: NextRequest) {
 
     return NextResponse.json({
       success: true,
-      sent: successCount,
-      failed: failCount,
-      total: validContacts.length,
-      errors: errors.length > 0 ? errors : undefined,
+      sent: result.sent,
+      failed: result.failed,
+      total: recipients.length,
+      errors: result.errors.length > 0 ? result.errors.map((e) => `${e.email}: ${e.reason}`) : undefined,
     })
   } catch (err) {
     console.error('Campaign send error:', err)

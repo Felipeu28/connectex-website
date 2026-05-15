@@ -1,9 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
-import { sendGmail } from '@/lib/gmail'
-import { getAuthedClient } from '@/lib/google-tokens'
+import { sendBulk, EmailSendError } from '@/lib/email-send'
 
-// Supabase admin client for cron (bypasses RLS, no cookies needed).
 function getSupabaseAdmin() {
   return createClient(
     (process.env.NEXT_PUBLIC_SUPABASE_URL ?? '').trim(),
@@ -17,7 +15,7 @@ interface DueEnrollment {
   current_step: number
   contact_id: string
   sequence_id: string
-  contact: { name: string; email: string } | { name: string; email: string }[] | null
+  contact: { id: string; name: string; email: string; unsubscribe_token: string | null; unsubscribed: boolean | null } | { id: string; name: string; email: string; unsubscribe_token: string | null; unsubscribed: boolean | null }[] | null
 }
 
 export async function GET(request: NextRequest) {
@@ -27,14 +25,6 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
   }
 
-  // Tokens now live in the DB (see migration 009). Vercel cron carries no
-  // cookies, which is why the previous cookie-backed implementation never
-  // sent a single email in production.
-  const auth = await getAuthedClient()
-  if (!auth) {
-    return NextResponse.json({ error: 'Gmail not connected', sent: 0 })
-  }
-
   const supabase = getSupabaseAdmin()
   const now = new Date().toISOString()
 
@@ -42,11 +32,11 @@ export async function GET(request: NextRequest) {
     .from('crm_sequence_enrollments')
     .select(`
       id, current_step, contact_id, sequence_id,
-      contact:crm_contacts(name, email)
+      contact:crm_contacts(id, name, email, unsubscribe_token, unsubscribed)
     `)
     .eq('status', 'active')
     .lte('next_send_at', now)
-    .limit(50) // stay within Vercel function timeout / Gmail send rate
+    .limit(100) // batched Resend send is fast enough to handle more per cycle
 
   if (error) {
     return NextResponse.json({ error: error.message }, { status: 500 })
@@ -70,7 +60,16 @@ export async function GET(request: NextRequest) {
       continue
     }
 
-    // Look up the step we're about to send.
+    if (contact.unsubscribed) {
+      await supabase
+        .from('crm_sequence_enrollments')
+        .update({ status: 'unsubscribed' })
+        .eq('id', enrollment.id)
+      skipped++
+      results.push({ contact: contact.name, step: enrollment.current_step, status: 'unsubscribed' })
+      continue
+    }
+
     const { data: step } = await supabase
       .from('crm_sequence_steps')
       .select('id, subject, body')
@@ -79,7 +78,6 @@ export async function GET(request: NextRequest) {
       .maybeSingle()
 
     if (!step) {
-      // Sequence is exhausted for this contact — mark complete and move on.
       await supabase
         .from('crm_sequence_enrollments')
         .update({ status: 'completed', completed_at: now })
@@ -88,7 +86,6 @@ export async function GET(request: NextRequest) {
       continue
     }
 
-    // Look up the next step so we know the delay (or whether to complete).
     const { data: nextStep } = await supabase
       .from('crm_sequence_steps')
       .select('delay_days')
@@ -96,11 +93,8 @@ export async function GET(request: NextRequest) {
       .eq('step_number', enrollment.current_step + 1)
       .maybeSingle()
 
-    // ATOMIC CLAIM: advance the enrollment BEFORE sending. The
-    // `eq('current_step', enrollment.current_step)` guard means a concurrent
-    // cron run that already advanced this row will get rowsAffected=0 and we
-    // skip it. This prevents double-sends if the cron overlaps itself or if
-    // a manual re-trigger happens.
+    // Atomic claim — advance enrollment before sending so concurrent runs
+    // can't double-send.
     let updatePatch: Record<string, string | number | null>
     if (nextStep) {
       const nextSendAt = new Date()
@@ -110,10 +104,7 @@ export async function GET(request: NextRequest) {
         next_send_at: nextSendAt.toISOString(),
       }
     } else {
-      updatePatch = {
-        status: 'completed',
-        completed_at: now,
-      }
+      updatePatch = { status: 'completed', completed_at: now }
     }
 
     const { data: claimed, error: claimError } = await supabase
@@ -125,54 +116,61 @@ export async function GET(request: NextRequest) {
       .select('id')
 
     if (claimError || !claimed || claimed.length === 0) {
-      // Lost the race to another worker — skip.
       results.push({ contact: contact.name, step: enrollment.current_step, status: 'skipped_race' })
       continue
     }
 
-    // Personalize.
-    const firstName = contact.name?.split(' ')[0] ?? ''
-    const subject = step.subject.replace(/\{\{name\}\}/g, firstName)
-    const body = step.body.replace(/\{\{name\}\}/g, firstName)
-
     try {
-      const gmailMessageId = await sendGmail(contact.email, subject, body, auth)
-
-      await supabase.from('crm_sequence_sends').insert({
-        enrollment_id: enrollment.id,
-        step_id: step.id,
-        contact_id: enrollment.contact_id,
-        subject,
-        gmail_message_id: gmailMessageId,
-      })
-
-      await supabase.from('crm_activity').insert({
-        type: 'email',
-        contact_id: enrollment.contact_id,
-        description: `Sequence email sent: "${subject}"`,
-        metadata: {
-          sequence_id: enrollment.sequence_id,
-          step: enrollment.current_step,
-          gmail_message_id: gmailMessageId,
+      const result = await sendBulk(
+        {
+          subject: step.subject,
+          body: step.body,
+          recipients: [
+            {
+              contact_id: contact.id,
+              name: contact.name,
+              email: contact.email,
+              unsubscribe_token: contact.unsubscribe_token,
+            },
+          ],
+          context: {
+            kind: 'sequence',
+            sequence_id: enrollment.sequence_id,
+            step_id: step.id,
+            enrollment_id: enrollment.id,
+          },
         },
-      })
+        supabase
+      )
 
-      sent++
-      results.push({ contact: contact.name, step: enrollment.current_step, status: 'sent' })
+      if (result.sent === 1 && result.messageIds.length === 1) {
+        await supabase.from('crm_sequence_sends').insert({
+          enrollment_id: enrollment.id,
+          step_id: step.id,
+          contact_id: enrollment.contact_id,
+          subject: step.subject,
+          resend_message_id: result.messageIds[0].id,
+        })
+        await supabase.from('crm_activity').insert({
+          type: 'email',
+          contact_id: enrollment.contact_id,
+          description: `Sequence email sent: "${step.subject}"`,
+          metadata: {
+            sequence_id: enrollment.sequence_id,
+            step: enrollment.current_step,
+            resend_message_id: result.messageIds[0].id,
+          },
+        })
+        sent++
+        results.push({ contact: contact.name, step: enrollment.current_step, status: 'sent' })
+      } else {
+        failed++
+        const detail = result.errors[0]?.reason ?? 'No message id returned'
+        results.push({ contact: contact.name, step: enrollment.current_step, status: 'failed', detail })
+      }
     } catch (err) {
-      // The enrollment is already advanced (claim happened pre-send), so the
-      // same email won't fire again next hour. Log the failure so it's
-      // visible. If the project later wants retries, change the claim to
-      // re-arm `next_send_at` here.
-      const detail = err instanceof Error ? err.message : String(err)
+      const detail = err instanceof EmailSendError ? err.message : (err instanceof Error ? err.message : String(err))
       console.error('Sequence send failed', { enrollmentId: enrollment.id, detail })
-      await supabase.from('crm_sequence_sends').insert({
-        enrollment_id: enrollment.id,
-        step_id: step.id,
-        contact_id: enrollment.contact_id,
-        subject,
-        gmail_message_id: null,
-      })
       failed++
       results.push({ contact: contact.name, step: enrollment.current_step, status: 'failed', detail })
     }

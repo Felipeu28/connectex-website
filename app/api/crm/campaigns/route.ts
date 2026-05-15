@@ -71,6 +71,25 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ ok: true })
     }
 
+    if (action === 'schedule') {
+      const { id, scheduled_at, recipients_filter } = body
+      if (!id || !scheduled_at) {
+        return NextResponse.json({ error: 'id and scheduled_at required' }, { status: 400 })
+      }
+      const admin = getSupabaseAdmin()
+      const { error } = await admin
+        .from('crm_campaigns')
+        .update({
+          status: 'scheduled',
+          scheduled_at,
+          recipients_filter: recipients_filter ?? { type: 'all' },
+          updated_at: new Date().toISOString(),
+        })
+        .eq('id', id)
+      if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+      return NextResponse.json({ ok: true })
+    }
+
     if (action === 'generate') {
       if (!process.env.GEMINI_API_KEY) {
         return NextResponse.json(
