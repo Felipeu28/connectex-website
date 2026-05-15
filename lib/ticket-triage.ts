@@ -1,20 +1,22 @@
 // Core AI triage logic — called directly by the ticket creation route
 // (avoids relying on an HTTP self-call that breaks when NEXT_PUBLIC_SITE_URL is unset)
 
-import { createClient as createAdminClient } from '@supabase/supabase-js'
 import { readFileSync } from 'fs'
 import { join } from 'path'
 import { notifyClientNewReply } from '@/lib/ticket-notifications'
 import { callGeminiJSON, GEMINI_FLASH, type GeminiPart } from '@/lib/gemini'
+import { createAdminClient } from '@/lib/supabase'
 
+/**
+ * Re-export the centralized admin client under the historical name
+ * `getSupabaseAdmin` so existing call sites (notably the portal callback
+ * at `app/portal/auth/callback/route.ts`) keep working.
+ */
 export function getSupabaseAdmin() {
-  return createAdminClient(
-    (process.env.NEXT_PUBLIC_SUPABASE_URL ?? '').trim(),
-    process.env.SUPABASE_SERVICE_ROLE_KEY ?? (process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? '').trim()
-  )
+  return createAdminClient()
 }
 
-// ─── Category detection ──────────────────────────────────────────────────────
+// ─── Category detection ───────────────────────────────────────────────────
 
 type TicketCategory = 'verizon' | 'microsoft365' | 'ucaas' | 'general'
 
@@ -71,7 +73,7 @@ function detectCategory(subject: string, description: string): TicketCategory[] 
   return matched.length > 0 ? matched : ['general']
 }
 
-// ─── Knowledge base loading ──────────────────────────────────────────────────
+// ─── Knowledge base loading ─────────────────────────────────────────────
 
 function loadKnowledge(categories: TicketCategory[]): string {
   const knowledgeDir = join(process.cwd(), 'lib', 'knowledge')
@@ -98,7 +100,7 @@ function loadKnowledge(categories: TicketCategory[]): string {
   return sections.join('\n\n---\n\n')
 }
 
-// ─── System prompt ───────────────────────────────────────────────────────────
+// ─── System prompt ──────────────────────────────────────────────────────────
 
 function buildSystemPrompt(knowledgeContext: string): string {
   const basePrompt = `You are an expert IT support assistant for Connectex Solutions, a vendor-neutral technology advisor for SMBs in Austin, TX. You represent Mark, a 20+ year technology veteran.
@@ -148,7 +150,7 @@ ${knowledgeContext}`
   return basePrompt
 }
 
-// ─── Notify Mark via email ────────────────────────────────────────────────────
+// ─── Notify Mark via email ──────────────────────────────────────────────────
 
 async function notifyMark(ticket: {
   id: string
@@ -219,7 +221,7 @@ async function notifyMark(ticket: {
   }).catch((err) => console.error('Mark notification email failed:', err))
 }
 
-// ─── Main triage function ─────────────────────────────────────────────────────
+// ─── Main triage function ───────────────────────────────────────────────────
 
 export interface TriageResult {
   skipped?: boolean
