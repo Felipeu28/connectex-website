@@ -18,6 +18,7 @@ import {
   Workflow,
   FileText,
   BookOpen,
+  Handshake,
 } from 'lucide-react'
 import { createSupabaseBrowser } from '@/lib/supabase-browser'
 
@@ -28,6 +29,7 @@ const navItems = [
   { href: '/crm/tickets', label: 'Tickets', icon: Ticket },
   { href: '/crm/campaigns', label: 'Campaigns', icon: Mail },
   { href: '/crm/sequences', label: 'Sequences', icon: Workflow },
+  { href: '/crm/partners', label: 'Partners', icon: Handshake },
   { href: '/crm/calendar', label: 'Calendar', icon: Calendar },
   { href: '/crm/blog', label: 'Blog', icon: FileText },
   { href: '/crm/knowledge-base', label: 'Knowledge Base', icon: BookOpen },

@@ -1,7 +1,11 @@
+import Link from 'next/link'
+import { ExternalLink } from 'lucide-react'
 import { ReferralForm } from '@/components/forms/ReferralForm'
 import { SectionWrapper } from '@/components/ui/SectionWrapper'
 import { breadcrumbSchema } from '@/lib/schema'
 import { generateMetadata as genMeta } from '@/lib/seo'
+import { getSupabaseAdmin } from '@/lib/ticket-triage'
+import type { Partner } from '@/lib/partner-types'
 
 export const metadata = genMeta({
   title: 'Partners & Referrals — Connectex Solutions',
@@ -10,11 +14,33 @@ export const metadata = genMeta({
   path: '/partners',
 })
 
-const preferredPartners: { name: string; category: string; color: string }[] = [
-  // To be filled when Mark confirms preferred vendors
-]
+// Revalidate every minute so CRM edits show up quickly without rebuild
+export const revalidate = 60
 
-export default function PartnersPage() {
+async function loadPartners(): Promise<Pick<Partner, 'id' | 'name' | 'category' | 'description' | 'website' | 'color' | 'featured'>[]> {
+  try {
+    const admin = getSupabaseAdmin()
+    const { data, error } = await admin
+      .from('partners')
+      .select('id, name, category, description, website, color, featured, sort_order')
+      .eq('visible', true)
+      .order('featured', { ascending: false })
+      .order('sort_order', { ascending: true })
+      .order('name', { ascending: true })
+
+    if (error) {
+      console.error('Public partners load error:', error)
+      return []
+    }
+    return data ?? []
+  } catch (err) {
+    console.error('Public partners load exception:', err)
+    return []
+  }
+}
+
+export default async function PartnersPage() {
+  const preferredPartners = await loadPartners()
   return (
     <>
       <script
@@ -91,13 +117,30 @@ export default function PartnersPage() {
             {preferredPartners.length > 0 && (
               <div className="mt-10">
                 <h3 className="font-bold text-white mb-5">Preferred local partners</h3>
-                <div className="grid grid-cols-2 gap-3">
-                  {preferredPartners.map((p) => (
-                    <div key={p.name} className="glass rounded-xl p-4 border border-white/8">
-                      <p className="text-sm font-semibold text-white">{p.name}</p>
-                      <p className="text-xs mt-1" style={{ color: p.color }}>{p.category}</p>
-                    </div>
-                  ))}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                  {preferredPartners.map((p) => {
+                    const card = (
+                      <div className="glass rounded-xl p-4 border border-white/8 h-full transition-colors hover:border-white/20">
+                        <div className="flex items-start justify-between gap-3">
+                          <div className="min-w-0">
+                            <p className="text-sm font-semibold text-white truncate">{p.name}</p>
+                            <p className="text-xs mt-1" style={{ color: p.color }}>{p.category}</p>
+                          </div>
+                          {p.website && <ExternalLink className="w-3.5 h-3.5 text-[var(--text-muted)] shrink-0" aria-hidden="true" />}
+                        </div>
+                        {p.description && (
+                          <p className="text-xs text-[var(--text-muted)] mt-2 line-clamp-2">{p.description}</p>
+                        )}
+                      </div>
+                    )
+                    return p.website ? (
+                      <Link key={p.id} href={p.website} target="_blank" rel="noopener noreferrer" className="block">
+                        {card}
+                      </Link>
+                    ) : (
+                      <div key={p.id}>{card}</div>
+                    )
+                  })}
                 </div>
               </div>
             )}
