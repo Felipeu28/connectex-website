@@ -6,6 +6,12 @@ const supabaseAnonKey = (process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? '').trim()
 
 const CRM_LOGIN_PATH = '/crm/login'
 const CRM_DASHBOARD_PATH = '/crm/dashboard'
+const CRM_PUBLIC_PATHS = new Set<string>([
+  '/crm/login',
+  '/crm/forgot-password',
+  '/crm/reset-password',
+  '/crm/auth/callback',
+])
 const PORTAL_LOGIN_PATH = '/portal/login'
 const PORTAL_DASHBOARD_PATH = '/portal/dashboard'
 const PORTAL_CALLBACK_PATH = '/portal/auth/callback'
@@ -52,8 +58,10 @@ export async function middleware(request: NextRequest) {
   }
 
   if (pathname.startsWith('/crm')) {
-    if (pathname === CRM_LOGIN_PATH) {
-      if (user) return buildRedirect(request, CRM_DASHBOARD_PATH)
+    if (CRM_PUBLIC_PATHS.has(pathname)) {
+      if (user && pathname === CRM_LOGIN_PATH) {
+        return buildRedirect(request, CRM_DASHBOARD_PATH)
+      }
       return response
     }
 
