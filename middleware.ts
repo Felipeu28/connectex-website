@@ -1,6 +1,5 @@
 import { createServerClient } from '@supabase/ssr'
 import { NextResponse, type NextRequest } from 'next/server'
-import { isAuthBypassed } from '@/lib/dev-bypass'
 
 const supabaseUrl = (process.env.NEXT_PUBLIC_SUPABASE_URL ?? '').trim()
 const supabaseAnonKey = (process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? '').trim()
@@ -21,13 +20,6 @@ export async function middleware(request: NextRequest) {
       headers: request.headers,
     },
   })
-
-  if (isAuthBypassed()) {
-    const { pathname } = request.nextUrl
-    if (pathname === CRM_LOGIN_PATH) return buildRedirect(request, CRM_DASHBOARD_PATH)
-    if (pathname === PORTAL_LOGIN_PATH) return buildRedirect(request, PORTAL_DASHBOARD_PATH)
-    return response
-  }
 
   const supabase = createServerClient(supabaseUrl, supabaseAnonKey, {
     cookies: {
