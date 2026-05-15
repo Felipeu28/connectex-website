@@ -4,6 +4,7 @@
 
 import { NextResponse } from 'next/server'
 import { createSupabaseServer } from '@/lib/supabase-server'
+import { DEV_BYPASS_USER, isAuthBypassed } from '@/lib/dev-bypass'
 
 interface AuthGuardResult {
   user: { id: string; email?: string } | null
@@ -18,6 +19,10 @@ interface AuthGuardResult {
  *   if (errorResponse) return errorResponse
  */
 export async function requireAdmin(): Promise<AuthGuardResult> {
+  if (isAuthBypassed()) {
+    return { user: DEV_BYPASS_USER, errorResponse: null }
+  }
+
   try {
     const supabase = await createSupabaseServer()
     const {
