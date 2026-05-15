@@ -23,9 +23,10 @@ export async function middleware(request: NextRequest) {
   })
 
   if (isAuthBypassed()) {
-    const { pathname } = request.nextUrl
-    if (pathname === CRM_LOGIN_PATH) return buildRedirect(request, CRM_DASHBOARD_PATH)
-    if (pathname === PORTAL_LOGIN_PATH) return buildRedirect(request, PORTAL_DASHBOARD_PATH)
+    // In bypass mode we still let users hit /crm/login and /portal/login so they
+    // can establish a real Supabase session — that session is what RLS uses for
+    // browser-direct queries (auth.role() = 'authenticated'). Without it, writes
+    // to crm_* tables silently fail with 401 from the Supabase REST API.
     return response
   }
 

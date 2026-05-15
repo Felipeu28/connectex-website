@@ -57,10 +57,19 @@ export default function CampaignsPage() {
   const [scheduledAt, setScheduledAt] = useState('')
 
   const load = useCallback(async () => {
-    const supabase = createSupabaseBrowser()
-    const { data } = await supabase.from('crm_campaigns').select('*').order('created_at', { ascending: false })
-    setCampaigns(data ?? [])
-    setLoading(false)
+    try {
+      const res = await fetch('/api/crm/campaigns')
+      if (!res.ok) {
+        setCampaigns([])
+      } else {
+        const data = await res.json()
+        setCampaigns(Array.isArray(data) ? data : [])
+      }
+    } catch {
+      setCampaigns([])
+    } finally {
+      setLoading(false)
+    }
   }, [])
 
   useEffect(() => {
@@ -144,35 +153,41 @@ export default function CampaignsPage() {
     if (!name.trim() || !subject.trim() || !body.trim()) return
     setSaving(true)
     setSaveError(null)
-    const supabase = createSupabaseBrowser()
 
-    const payload = {
-      name: name.trim(),
-      subject: subject.trim(),
-      body: body.trim(),
-      status: 'draft' as const,
-      updated_at: new Date().toISOString(),
+    try {
+      const res = await fetch('/api/crm/campaigns', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'save',
+          id: editCampaign?.id,
+          name: name.trim(),
+          subject: subject.trim(),
+          body: body.trim(),
+          status: 'draft',
+        }),
+      })
+      const data = await res.json().catch(() => null)
+      if (!res.ok) {
+        setSaveError(data?.error ?? `Save failed (${res.status})`)
+        return
+      }
+      setEditorOpen(false)
+      load()
+    } catch (err) {
+      setSaveError(err instanceof Error ? err.message : 'Save failed')
+    } finally {
+      setSaving(false)
     }
-
-    const { error } = editCampaign
-      ? await supabase.from('crm_campaigns').update(payload).eq('id', editCampaign.id)
-      : await supabase.from('crm_campaigns').insert(payload)
-
-    setSaving(false)
-
-    if (error) {
-      setSaveError(error.message)
-      return
-    }
-
-    setEditorOpen(false)
-    load()
   }
 
   async function deleteCampaign(id: string) {
     if (!confirm('Delete this campaign?')) return
-    const supabase = createSupabaseBrowser()
-    await supabase.from('crm_campaigns').delete().eq('id', id)
+    await fetch('/api/crm/campaigns', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'delete', id }),
+    })
     load()
   }
 

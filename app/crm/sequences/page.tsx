@@ -56,26 +56,19 @@ export default function SequencesPage() {
   const [enrollDone, setEnrollDone] = useState<{ enrolled: number; skipped: number } | null>(null)
 
   const load = useCallback(async () => {
-    const supabase = createSupabaseBrowser()
-    const { data: seqs } = await supabase
-      .from('crm_sequences')
-      .select('*')
-      .neq('status', 'archived')
-      .order('created_at', { ascending: false })
-
-    if (!seqs) { setLoading(false); return }
-
-    // Load step counts and enrollment counts
-    const enriched = await Promise.all(seqs.map(async (seq) => {
-      const [stepsRes, enrollRes] = await Promise.all([
-        supabase.from('crm_sequence_steps').select('*').eq('sequence_id', seq.id).order('step_number'),
-        supabase.from('crm_sequence_enrollments').select('id', { count: 'exact' }).eq('sequence_id', seq.id).eq('status', 'active'),
-      ])
-      return { ...seq, steps: stepsRes.data ?? [], enrollment_count: enrollRes.count ?? 0 }
-    }))
-
-    setSequences(enriched)
-    setLoading(false)
+    try {
+      const res = await fetch('/api/crm/sequences')
+      if (!res.ok) {
+        setSequences([])
+      } else {
+        const data = await res.json()
+        setSequences(Array.isArray(data) ? data : [])
+      }
+    } catch {
+      setSequences([])
+    } finally {
+      setLoading(false)
+    }
   }, [])
 
   useEffect(() => {
@@ -161,37 +154,23 @@ Write a short, personal email (not salesy). Return JSON: {"subject": "...", "bod
     if (!seqName.trim() || steps.some(s => !s.subject.trim() || !s.body.trim())) return
     setSaving(true)
     setSaveError(null)
-    const supabase = createSupabaseBrowser()
 
     try {
-      if (editSeq) {
-        const r1 = await supabase
-          .from('crm_sequences')
-          .update({ name: seqName, description: seqDesc || null, updated_at: new Date().toISOString() })
-          .eq('id', editSeq.id)
-        if (r1.error) throw r1.error
-
-        const r2 = await supabase.from('crm_sequence_steps').delete().eq('sequence_id', editSeq.id)
-        if (r2.error) throw r2.error
-
-        const r3 = await supabase
-          .from('crm_sequence_steps')
-          .insert(steps.map(s => ({ ...s, id: undefined, sequence_id: editSeq.id })))
-        if (r3.error) throw r3.error
-      } else {
-        const { data: seq, error: seqErr } = await supabase
-          .from('crm_sequences')
-          .insert({ name: seqName, description: seqDesc || null })
-          .select('id')
-          .single()
-        if (seqErr) throw seqErr
-        if (!seq) throw new Error('Sequence insert returned no row (likely RLS blocked it).')
-
-        const r = await supabase
-          .from('crm_sequence_steps')
-          .insert(steps.map(s => ({ ...s, id: undefined, sequence_id: seq.id })))
-        if (r.error) throw r.error
-      }
+      const cleanSteps = steps.map((s) => ({
+        step_number: s.step_number,
+        delay_days: s.delay_days,
+        subject: s.subject,
+        body: s.body,
+      }))
+      const url = editSeq ? `/api/crm/sequences/${editSeq.id}` : '/api/crm/sequences'
+      const method = editSeq ? 'PATCH' : 'POST'
+      const res = await fetch(url, {
+        method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: seqName, description: seqDesc || null, steps: cleanSteps }),
+      })
+      const body = await res.json().catch(() => null)
+      if (!res.ok) throw new Error(body?.error ?? `Save failed (${res.status})`)
 
       setSaving(false)
       setEditorOpen(false)
@@ -203,15 +182,17 @@ Write a short, personal email (not salesy). Return JSON: {"subject": "...", "bod
   }
 
   async function toggleStatus(seq: Sequence) {
-    const supabase = createSupabaseBrowser()
     const newStatus = seq.status === 'active' ? 'paused' : 'active'
-    await supabase.from('crm_sequences').update({ status: newStatus }).eq('id', seq.id)
+    await fetch(`/api/crm/sequences/${seq.id}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status: newStatus }),
+    })
     load()
   }
 
   async function archiveSequence(id: string) {
-    const supabase = createSupabaseBrowser()
-    await supabase.from('crm_sequences').update({ status: 'archived' }).eq('id', id)
+    await fetch(`/api/crm/sequences/${id}`, { method: 'DELETE' })
     load()
   }
 
@@ -254,40 +235,26 @@ Write a short, personal email (not salesy). Return JSON: {"subject": "...", "bod
     if (!enrollSeq || enrollSelected.size === 0 || enrolling) return
     setEnrolling(true)
 
-    const supabase = createSupabaseBrowser()
-    // Get first step's delay_days to compute next_send_at
-    const { data: firstStep } = await supabase
-      .from('crm_sequence_steps')
-      .select('delay_days')
-      .eq('sequence_id', enrollSeq.id)
-      .eq('step_number', 1)
-      .single()
-
-    const delayDays = firstStep?.delay_days ?? 0
-    const nextSendAt = new Date()
-    nextSendAt.setDate(nextSendAt.getDate() + delayDays)
-
-    let enrolled = 0
-    let skipped = 0
-
-    for (const [contactId] of enrollSelected) {
-      const { error } = await supabase.from('crm_sequence_enrollments').insert({
-        sequence_id: enrollSeq.id,
-        contact_id: contactId,
-        current_step: 1,
-        status: 'active',
-        next_send_at: nextSendAt.toISOString(),
+    try {
+      const res = await fetch('/api/crm/sequences/enroll', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          sequence_id: enrollSeq.id,
+          contact_ids: Array.from(enrollSelected.keys()),
+        }),
       })
-      if (error && error.code === '23505') {
-        skipped++ // unique constraint — already enrolled
-      } else if (!error) {
-        enrolled++
-      }
+      const data = await res.json().catch(() => null)
+      setEnrollDone({
+        enrolled: data?.enrolled ?? 0,
+        skipped: data?.skipped ?? 0,
+      })
+    } catch {
+      setEnrollDone({ enrolled: 0, skipped: enrollSelected.size })
+    } finally {
+      setEnrolling(false)
+      load()
     }
-
-    setEnrollDone({ enrolled, skipped })
-    setEnrolling(false)
-    load()
   }
 
   function openEnrollModal(seq: Sequence) {

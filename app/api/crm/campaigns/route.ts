@@ -1,13 +1,75 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { callGeminiJSON, GEMINI_PRO } from '@/lib/gemini'
 import { requireAdmin } from '@/lib/auth-guard'
+import { getSupabaseAdmin } from '@/lib/ticket-triage'
+
+export async function GET() {
+  const { errorResponse } = await requireAdmin()
+  if (errorResponse) return errorResponse
+
+  try {
+    const admin = getSupabaseAdmin()
+    const { data, error } = await admin
+      .from('crm_campaigns')
+      .select('*')
+      .order('created_at', { ascending: false })
+    if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+    return NextResponse.json(data ?? [])
+  } catch (err) {
+    console.error('Campaigns GET error:', err)
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+  }
+}
 
 export async function POST(req: NextRequest) {
   const { errorResponse } = await requireAdmin()
   if (errorResponse) return errorResponse
 
   try {
-    const { action, prompt, documentContext } = await req.json()
+    const body = await req.json()
+    const { action, prompt, documentContext } = body
+
+    // ── Save/create a campaign draft ─────────────────────────────────────────
+    if (action === 'save' || (!action && body.name)) {
+      const { id, name, subject, body: emailBody, status } = body
+      if (!name?.trim() || !subject?.trim() || !emailBody?.trim()) {
+        return NextResponse.json({ error: 'name, subject, body required' }, { status: 400 })
+      }
+      const admin = getSupabaseAdmin()
+      const payload = {
+        name: name.trim(),
+        subject: subject.trim(),
+        body: emailBody.trim(),
+        status: status ?? 'draft',
+        updated_at: new Date().toISOString(),
+      }
+      if (id) {
+        const { data, error } = await admin
+          .from('crm_campaigns')
+          .update(payload)
+          .eq('id', id)
+          .select('*')
+          .single()
+        if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+        return NextResponse.json(data)
+      } else {
+        const { data, error } = await admin
+          .from('crm_campaigns')
+          .insert(payload)
+          .select('*')
+          .single()
+        if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+        return NextResponse.json(data, { status: 201 })
+      }
+    }
+
+    if (action === 'delete') {
+      if (!body.id) return NextResponse.json({ error: 'id required' }, { status: 400 })
+      const admin = getSupabaseAdmin()
+      const { error } = await admin.from('crm_campaigns').delete().eq('id', body.id)
+      if (error) return NextResponse.json({ error: error.message }, { status: 500 })
+      return NextResponse.json({ ok: true })
+    }
 
     if (action === 'generate') {
       if (!process.env.GEMINI_API_KEY) {
