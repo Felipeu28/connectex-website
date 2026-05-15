@@ -19,11 +19,13 @@ import {
   FileText,
   BookOpen,
   Handshake,
+  Network,
 } from 'lucide-react'
 import { createSupabaseBrowser } from '@/lib/supabase-browser'
 
 const navItems = [
   { href: '/crm/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { href: '/crm/graph', label: 'Brain Graph', icon: Network },
   { href: '/crm/contacts', label: 'Contacts', icon: Users },
   { href: '/crm/pipeline', label: 'Pipeline', icon: Kanban },
   { href: '/crm/tickets', label: 'Tickets', icon: Ticket },
