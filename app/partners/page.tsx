@@ -4,37 +4,30 @@ import { ReferralForm } from '@/components/forms/ReferralForm'
 import { SectionWrapper } from '@/components/ui/SectionWrapper'
 import { breadcrumbSchema } from '@/lib/schema'
 import { generateMetadata as genMeta } from '@/lib/seo'
-import { getSupabaseAdmin } from '@/lib/ticket-triage'
+import { createAdminClient } from '@/lib/supabase'
 import type { Partner } from '@/lib/partner-types'
 
 export const metadata = genMeta({
   title: 'Partners & Referrals — Connectex Solutions',
-  description:
-    'Refer a business to Connectex or become a preferred local technology partner in Austin TX. Direct referrals, direct payment — no middleman.',
+  description: 'Refer a business to Connectex or become a preferred local technology partner in Austin TX. Direct referrals, direct payment — no middleman.',
   path: '/partners',
 })
 
-// Revalidate every minute so CRM edits show up quickly without rebuild
 export const revalidate = 60
 
-async function loadPartners(): Promise<Pick<Partner, 'id' | 'name' | 'category' | 'description' | 'website' | 'color' | 'featured'>[]> {
-  try {
-    const admin = getSupabaseAdmin()
-    const { data, error } = await admin
-      .from('partners')
-      .select('id, name, category, description, website, color, featured, sort_order')
-      .eq('visible', true)
-      .order('featured', { ascending: false })
-      .order('sort_order', { ascending: true })
-      .order('name', { ascending: true })
+type PublicPartner = Pick<Partner, 'id' | 'name' | 'category' | 'description' | 'website' | 'color' | 'featured'>
 
+async function loadPartners(): Promise<PublicPartner[]> {
+  try {
+    const admin = createAdminClient()
+    const { data, error } = await admin.from('partners').select('id, name, category, description, website, color, featured, sort_order').eq('visible', true).order('featured', { ascending: false }).order('sort_order', { ascending: true }).order('name', { ascending: true })
     if (error) {
-      console.error('Public partners load error:', error)
+      console.warn('Public partners load returned error — rendering empty list:', error.message)
       return []
     }
     return data ?? []
   } catch (err) {
-    console.error('Public partners load exception:', err)
+    console.warn('Public partners load exception — rendering empty list:', err)
     return []
   }
 }
@@ -43,42 +36,21 @@ export default async function PartnersPage() {
   const preferredPartners = await loadPartners()
   return (
     <>
-      <script
-        type="application/ld+json"
-        dangerouslySetInnerHTML={{
-          __html: JSON.stringify(
-            breadcrumbSchema([
-              { name: 'Home', url: '/' },
-              { name: 'Partners', url: '/partners' },
-            ])
-          ),
-        }}
-      />
-
-      {/* Hero */}
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(breadcrumbSchema([{ name: 'Home', url: '/' }, { name: 'Partners', url: '/partners' }])) }} />
       <section className="pt-32 pb-20 px-4 sm:px-6 grid-bg">
         <div className="max-w-4xl mx-auto text-center">
           <p className="text-[#00C9A7] text-sm font-semibold uppercase tracking-widest mb-4">Partners & Referrals</p>
-          <h1 className="text-4xl sm:text-5xl font-bold text-white leading-tight mb-5">
-            Know a business that needs technology help?
-          </h1>
-          <p className="text-[var(--text-muted)] text-lg max-w-2xl mx-auto">
-            Submit a direct referral and Mark will take it from there. No platform fees, no middleman — if we close the deal, you get paid directly.
-          </p>
+          <h1 className="text-4xl sm:text-5xl font-bold text-white leading-tight mb-5">Know a business that needs technology help?</h1>
+          <p className="text-[var(--text-muted)] text-lg max-w-2xl mx-auto">Submit a direct referral and Mark will take it from there. No platform fees, no middleman — if we close the deal, you get paid directly.</p>
         </div>
       </section>
-
       <div className="max-w-7xl mx-auto px-4 sm:px-6 pb-24">
         <div className="grid md:grid-cols-2 gap-12 items-start">
-          {/* For businesses */}
           <SectionWrapper className="pt-16">
             <div className="mb-10">
               <h2 className="text-2xl font-bold text-white mb-3">For businesses</h2>
-              <p className="text-[var(--text-muted)] leading-relaxed">
-                Looking for a reliable local technology vendor? Submit your information and Mark will connect you directly with the right solution — no AppDirect required.
-              </p>
+              <p className="text-[var(--text-muted)] leading-relaxed">Looking for a reliable local technology vendor? Submit your information and Mark will connect you directly with the right solution — no AppDirect required.</p>
             </div>
-
             <div className="space-y-4 mb-10">
               {[
                 ['Direct connection', 'Mark personally follows up on every referral within 24 hours'],
@@ -87,9 +59,7 @@ export default async function PartnersPage() {
               ].map(([title, desc]) => (
                 <div key={title} className="flex items-start gap-3">
                   <div className="w-6 h-6 rounded-lg bg-[#00C9A7]/15 border border-[#00C9A7]/30 flex items-center justify-center shrink-0 mt-0.5">
-                    <svg className="w-3.5 h-3.5 text-[#00C9A7]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
-                      <path strokeLinecap="round" strokeLinejoin="round" d="m4.5 12.75 6 6 9-13.5" />
-                    </svg>
+                    <svg className="w-3.5 h-3.5 text-[#00C9A7]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="m4.5 12.75 6 6 9-13.5" /></svg>
                   </div>
                   <div>
                     <p className="text-sm font-semibold text-white">{title}</p>
@@ -98,22 +68,11 @@ export default async function PartnersPage() {
                 </div>
               ))}
             </div>
-
-            {/* For vendors */}
             <div className="glass rounded-2xl p-7 border border-white/8">
               <h3 className="font-bold text-white mb-3">Are you a local technology vendor?</h3>
-              <p className="text-sm text-[var(--text-muted)] mb-4">
-                Connectex is building a network of preferred local partners. If you provide technology services to Austin area businesses, we&rsquo;d like to talk.
-              </p>
-              <a
-                href="mailto:mark@connectex.net?subject=Partner inquiry"
-                className="text-sm font-medium text-[#00C9A7] hover:text-white transition-colors"
-              >
-                Email mark@connectex.net →
-              </a>
+              <p className="text-sm text-[var(--text-muted)] mb-4">Connectex is building a network of preferred local partners. If you provide technology services to Austin area businesses, we&rsquo;d like to talk.</p>
+              <a href="mailto:mark@connectex.net?subject=Partner inquiry" className="text-sm font-medium text-[#00C9A7] hover:text-white transition-colors">Email mark@connectex.net →</a>
             </div>
-
-            {/* Preferred partners list */}
             {preferredPartners.length > 0 && (
               <div className="mt-10">
                 <h3 className="font-bold text-white mb-5">Preferred local partners</h3>
@@ -128,31 +87,21 @@ export default async function PartnersPage() {
                           </div>
                           {p.website && <ExternalLink className="w-3.5 h-3.5 text-[var(--text-muted)] shrink-0" aria-hidden="true" />}
                         </div>
-                        {p.description && (
-                          <p className="text-xs text-[var(--text-muted)] mt-2 line-clamp-2">{p.description}</p>
-                        )}
+                        {p.description && <p className="text-xs text-[var(--text-muted)] mt-2 line-clamp-2">{p.description}</p>}
                       </div>
                     )
                     return p.website ? (
-                      <Link key={p.id} href={p.website} target="_blank" rel="noopener noreferrer" className="block">
-                        {card}
-                      </Link>
-                    ) : (
-                      <div key={p.id}>{card}</div>
-                    )
+                      <Link key={p.id} href={p.website} target="_blank" rel="noopener noreferrer" className="block">{card}</Link>
+                    ) : (<div key={p.id}>{card}</div>)
                   })}
                 </div>
               </div>
             )}
           </SectionWrapper>
-
-          {/* Referral form */}
           <SectionWrapper className="pt-16">
             <div className="glass rounded-3xl p-8 sm:p-10 border border-white/8 sticky top-24">
               <h2 className="text-xl font-bold text-white mb-2">Submit a referral</h2>
-              <p className="text-sm text-[var(--text-muted)] mb-7">
-                Fill out the form and Mark will follow up directly with your contact.
-              </p>
+              <p className="text-sm text-[var(--text-muted)] mb-7">Fill out the form and Mark will follow up directly with your contact.</p>
               <ReferralForm />
             </div>
           </SectionWrapper>
