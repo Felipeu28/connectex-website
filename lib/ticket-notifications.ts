@@ -1,6 +1,6 @@
+import { sendEmail as sendEmailUnified } from '@/lib/email-send'
+
 const SITE_URL = (process.env.NEXT_PUBLIC_SITE_URL ?? 'https://connectex-website.vercel.app').trim()
-const RESEND_KEY = process.env.RESEND_API_KEY
-const FROM = 'Connectex Support <support@connectex.net>'
 
 interface TicketEmailData {
   clientName: string
@@ -11,12 +11,18 @@ interface TicketEmailData {
 }
 
 async function sendEmail(to: string, emailSubject: string, html: string) {
-  if (!RESEND_KEY) return
-  await fetch('https://api.resend.com/emails', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${RESEND_KEY}` },
-    body: JSON.stringify({ from: FROM, to: [to], subject: emailSubject, html }),
-  }).catch((err) => console.error('Email send failed:', err))
+  // Routes through Resend with Gmail fallback. If both providers are
+  // unconfigured the call returns ok:false and we log it.
+  const result = await sendEmailUnified({
+    to,
+    subject: emailSubject,
+    html,
+    fromName: 'Connectex Support',
+    fromEmail: 'support@connectex.net',
+  })
+  if (!result.ok) {
+    console.error('Ticket email send failed:', result.errors.join(' | '))
+  }
 }
 
 function baseTemplate(content: string) {
