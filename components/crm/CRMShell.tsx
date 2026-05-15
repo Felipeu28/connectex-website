@@ -112,7 +112,7 @@ export function CRMShell({ children }: { children: React.ReactNode }) {
   )
 
   return (
-    <div className="flex h-screen overflow-hidden bg-[#0a1218]">
+    <div data-force-theme="dark" className="flex h-screen overflow-hidden bg-[#0a1218]">
       {/* Desktop sidebar */}
       <aside className="hidden lg:flex w-60 flex-col border-r border-white/8 bg-[#0F1B2D]">
         {sidebar}

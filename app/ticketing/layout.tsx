@@ -25,7 +25,7 @@ export default function TicketingLayout({ children }: { children: React.ReactNod
           `,
         }}
       />
-      <div className="min-h-screen flex flex-col">
+      <div data-force-theme="dark" className="min-h-screen flex flex-col">
         {/* Minimal header */}
         <header className="border-b border-white/10 bg-[var(--color-navy)]/80 backdrop-blur-md sticky top-0 z-50">
           <div className="max-w-4xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">

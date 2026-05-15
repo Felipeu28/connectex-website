@@ -24,7 +24,7 @@ export function PortalShell({ children, userEmail }: PortalShellProps) {
   }
 
   return (
-    <div className="min-h-screen bg-[#0F1B2D]">
+    <div data-force-theme="dark" className="min-h-screen bg-[#0F1B2D]">
       {/* Top nav */}
       <nav
         className="sticky top-0 z-50 border-b"

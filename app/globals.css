@@ -100,6 +100,29 @@ body {
   border: 1px solid rgba(0, 0, 0, 0.1);
 }
 
+/* Admin/portal/ticketing surfaces are always dark — opt out of the light theme
+   so `.glass` cards don't render as near-opaque white on the navy background. */
+[data-force-theme="dark"] {
+  --bg:         var(--color-navy);
+  --bg-card:    var(--color-navy-card);
+  --border:     var(--color-navy-border);
+  --text:       var(--color-text-light);
+  --text-muted: var(--color-text-muted);
+  color-scheme: dark;
+}
+
+.light [data-force-theme="dark"] .glass,
+[data-force-theme="dark"] .glass {
+  background: rgba(255, 255, 255, 0.04);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.light [data-force-theme="dark"] .glass-strong,
+[data-force-theme="dark"] .glass-strong {
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
 /* ─── Grid Background ───────────────────────────────────────── */
 .grid-bg {
   background-image:
