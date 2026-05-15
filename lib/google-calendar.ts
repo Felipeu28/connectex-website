@@ -8,9 +8,13 @@ const SCOPES = [
   'https://www.googleapis.com/auth/gmail.readonly',
 ]
 
-/** Generate the Google OAuth consent URL */
-export function getAuthUrl(state?: string) {
-  const client = getOAuthClientForConsent()
+/**
+ * Generate the Google OAuth consent URL. Pass the request origin (e.g.
+ * "https://app.connectex.com") so the redirect URI baked into the consent
+ * URL matches whatever host the user is browsing from.
+ */
+export function getAuthUrl(state?: string, origin?: string) {
+  const client = getOAuthClientForConsent(origin)
   return client.generateAuthUrl({
     access_type: 'offline',
     prompt: 'consent',
@@ -19,9 +23,9 @@ export function getAuthUrl(state?: string) {
   })
 }
 
-/** Exchange an auth code for tokens */
-export async function getTokensFromCode(code: string) {
-  const client = getOAuthClientForConsent()
+/** Exchange an auth code for tokens. Origin must match the one used during consent. */
+export async function getTokensFromCode(code: string, origin?: string) {
+  const client = getOAuthClientForConsent(origin)
   const { tokens } = await client.getToken(code)
   return tokens
 }

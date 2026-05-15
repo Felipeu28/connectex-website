@@ -1,6 +1,6 @@
-import { createClient } from '@supabase/supabase-js'
 import { google } from 'googleapis'
 import type { OAuth2Client, Credentials } from 'google-auth-library'
+import { createAdminClient } from '@/lib/supabase'
 
 /**
  * Google OAuth token storage + auto-refreshing OAuth2 client.
@@ -25,19 +25,46 @@ interface StoredTokens {
 }
 
 function getAdminSupabase() {
-  const url = (process.env.NEXT_PUBLIC_SUPABASE_URL ?? '').trim()
-  const key =
-    process.env.SUPABASE_SERVICE_ROLE_KEY ??
-    (process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY ?? '').trim()
-  if (!url || !key) return null
-  return createClient(url, key, { auth: { persistSession: false } })
+  // Routes through the centralized admin client so we always read the
+  // canonical env var names (`NEXT_PUBLIC_SUPABASE_URL` + `SECRET_KEY`).
+  // Returns null if env vars aren't set so callers can fall through.
+  try {
+    return createAdminClient()
+  } catch {
+    return null
+  }
 }
 
-function getOAuth2Client(): OAuth2Client {
+/**
+ * Derive the redirect URI used for Google OAuth.
+ *
+ * Priority:
+ *   1. Caller-supplied origin (from the incoming request) — used during
+ *      `/api/google/connect` and `/api/google/callback` so the URI matches
+ *      whatever host the user is actually browsing from.
+ *   2. NEXT_PUBLIC_APP_URL (user's preferred env var name)
+ *   3. NEXT_PUBLIC_SITE_URL (legacy fallback)
+ *   4. http://localhost:3000 (last-ditch dev default)
+ *
+ * Whichever value resolves first MUST be added verbatim — including
+ * `/api/google/callback` — to your OAuth client's "Authorized redirect URIs"
+ * in Google Cloud Console.
+ */
+export function getRedirectUri(origin?: string): string {
+  const base = (
+    origin ||
+    process.env.NEXT_PUBLIC_APP_URL ||
+    process.env.NEXT_PUBLIC_SITE_URL ||
+    'http://localhost:3000'
+  ).trim().replace(/\/$/, '')
+  return `${base}/api/google/callback`
+}
+
+function getOAuth2Client(origin?: string): OAuth2Client {
   return new google.auth.OAuth2(
     process.env.GOOGLE_CLIENT_ID,
     process.env.GOOGLE_CLIENT_SECRET,
-    `${(process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000').trim()}/api/google/callback`
+    getRedirectUri(origin)
   )
 }
 
@@ -140,7 +167,13 @@ export async function getAuthedClient(): Promise<OAuth2Client | null> {
   return client
 }
 
-/** Bare OAuth2 client for the consent URL / code-exchange flow. */
-export function getOAuthClientForConsent(): OAuth2Client {
-  return getOAuth2Client()
+/**
+ * Bare OAuth2 client for the consent URL / code-exchange flow.
+ *
+ * Pass the request `origin` so the redirect URI matches the host the user
+ * is actually browsing from — that's what eliminates `redirect_uri_mismatch`
+ * errors in dev (where the port can vary) and in preview deployments.
+ */
+export function getOAuthClientForConsent(origin?: string): OAuth2Client {
+  return getOAuth2Client(origin)
 }
