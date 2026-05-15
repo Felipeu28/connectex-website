@@ -8,5 +8,8 @@ alter table tickets
 
 create index if not exists idx_tickets_assigned_staff on tickets(assigned_staff_id);
 
+-- Convenience: relax the staff `status` default so manually-added staff are
+-- immediately active (the original schema defaulted to 'invited' for the
+-- magic-link invite flow we no longer need).
 alter table crm_staff
   alter column status set default 'active';

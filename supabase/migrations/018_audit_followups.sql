@@ -32,7 +32,7 @@ do $$ begin
   end if;
 end $$;
 
--- ─── updated_at triggers ────────────────────────────────────────────────
+-- ─── updated_at triggers ───────────────────────────────────────────────
 
 do $$ begin
   if exists (select 1 from information_schema.columns
@@ -74,15 +74,19 @@ do $$ begin
   end if;
 end $$;
 
+-- crm_emails is created by migration 013. If 013 hasn't run yet (e.g.
+-- felipeu28 lineage), the to_regclass test below skips the trigger.
 do $$ begin
   if to_regclass('public.crm_emails') is not null
      and exists (select 1 from information_schema.columns
                  where table_name = 'crm_emails' and column_name = 'received_at') then
+    -- crm_emails uses received_at / created_at; no updated_at column today.
+    -- Skip rather than invent one — noted for future schema work.
     null;
   end if;
 end $$;
 
--- ─── sequence_enrollments indexes ───────────────────────────────────────
+-- ─── sequence_enrollments index ──────────────────────────────────────────
 create index if not exists idx_seq_enrollments_sequence
   on crm_sequence_enrollments(sequence_id);
 

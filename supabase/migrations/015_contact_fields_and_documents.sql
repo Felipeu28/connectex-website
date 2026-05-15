@@ -6,16 +6,20 @@
 -- Also adds a `crm_contact_documents` table backed by the
 -- `ticket-attachments` storage bucket for per-contact file uploads.
 
+-- ─── 1. Contact name split ────────────────────────────────────────────────────
+
 alter table crm_contacts
   add column if not exists first_name        text,
   add column if not exists last_name         text,
   add column if not exists phone_country_code text default '+1';
 
+-- Backfill: split existing single-line names on the first whitespace.
 update crm_contacts
    set first_name = split_part(name, ' ', 1),
        last_name  = nullif(regexp_replace(name, '^\S+\s*', ''), '')
  where first_name is null;
 
+-- Trigger keeps `name` in sync whenever first/last are set.
 create or replace function sync_contact_name()
   returns trigger language plpgsql as $$
 begin
@@ -31,6 +35,8 @@ drop trigger if exists crm_contacts_sync_name on crm_contacts;
 create trigger crm_contacts_sync_name
   before insert or update on crm_contacts
   for each row execute function sync_contact_name();
+
+-- ─── 2. Contact documents table ───────────────────────────────────────────────
 
 create table if not exists crm_contact_documents (
   id           uuid primary key default gen_random_uuid(),

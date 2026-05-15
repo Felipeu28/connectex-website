@@ -38,11 +38,13 @@ create policy "auth_full_access_partners"
   on partners for all
   using (auth.role() = 'authenticated');
 
+-- Anon can read visible partners only (for /partners public page).
 drop policy if exists "anon_read_visible_partners" on partners;
 create policy "anon_read_visible_partners"
   on partners for select
   using (visible = true);
 
+-- Reuse the shared updated_at trigger fn (created by migration 013 or 018).
 do $$ begin
   if exists (select 1 from pg_proc where proname = 'set_updated_at') then
     drop trigger if exists partners_updated_at on partners;

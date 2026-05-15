@@ -38,6 +38,7 @@ create trigger email_templates_updated_at
   before update on email_templates
   for each row execute function set_updated_at();
 
+-- Seed a couple of useful starter templates.
 insert into email_templates (name, category, subject, body, description) values
   ('Discovery call follow-up', 'follow_up',
    'Following up on our conversation, {{first_name}}',

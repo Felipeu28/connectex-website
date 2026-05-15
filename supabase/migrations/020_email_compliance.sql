@@ -4,11 +4,13 @@
 -- correlation. Renumbered from felipeu28's 012_email_compliance.sql to fit
 -- after moil's 013–017 + 018 (audit follow-ups) + 019 (partners).
 
+-- ─── Per-contact unsubscribe token ────────────────────────────────────────────
 alter table crm_contacts
   add column if not exists unsubscribe_token uuid default gen_random_uuid(),
   add column if not exists unsubscribed boolean default false,
   add column if not exists unsubscribed_at timestamptz;
 
+-- Backfill tokens for rows created before this migration ran.
 update crm_contacts set unsubscribe_token = gen_random_uuid()
   where unsubscribe_token is null;
 
@@ -18,6 +20,7 @@ create unique index if not exists crm_contacts_unsubscribe_token_idx
 create index if not exists crm_contacts_unsubscribed_idx
   on crm_contacts(unsubscribed) where unsubscribed = true;
 
+-- ─── Email events (Resend webhook ingestion) ─────────────────────────────
 create table if not exists email_events (
   id            uuid primary key default gen_random_uuid(),
   event_type    text not null check (event_type in (
@@ -28,11 +31,11 @@ create table if not exists email_events (
   contact_id    uuid references crm_contacts(id) on delete set null,
   campaign_id   uuid references crm_campaigns(id) on delete set null,
   sequence_id   uuid references crm_sequences(id) on delete set null,
-  send_id       text,
-  link_url      text,
+  send_id       text,            -- Resend message id
+  link_url      text,            -- For click events
   user_agent    text,
   ip_address    text,
-  raw           jsonb,
+  raw           jsonb,           -- Full webhook payload for debugging
   created_at    timestamptz default now()
 );
 
@@ -53,6 +56,7 @@ create policy "auth_read_email_events"
   on email_events for select
   using (auth.role() = 'authenticated');
 
+-- ─── Sequence send tracking ───────────────────────────────────────────────────
 alter table crm_sequence_sends
   add column if not exists resend_message_id text;
 
