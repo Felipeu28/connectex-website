@@ -7,7 +7,7 @@ export const metadata: Metadata = {
 
 export default async function CRMLayout({ children }: { children: React.ReactNode }) {
   return (
-    <div className="min-h-screen bg-[var(--bg)]">
+    <div data-force-theme="dark" className="min-h-screen bg-[var(--bg)]">
       {children}
     </div>
   )
