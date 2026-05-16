@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { callGemini, GEMINI_FLASH } from '@/lib/gemini'
 import { WALKTHROUGHS } from '@/lib/knowledge/walkthroughs'
-import { getSupabaseAdmin } from '@/lib/ticket-triage'
+import { searchKbDocuments, formatKbHits } from '@/lib/knowledge/kb-search'
+import { checkRateLimit, clientKeyFromRequest } from '@/lib/rate-limit'
 
 export const runtime = 'nodejs'
 export const maxDuration = 30
@@ -52,25 +53,34 @@ function buildKnowledgeContext(query: string): string {
     .join('\n\n---\n\n')
 }
 
-async function loadKbDocsForCategory(): Promise<string> {
-  // Pull additional uploaded KB docs (PDFs Mark added) for extra context.
-  try {
-    const admin = getSupabaseAdmin()
-    const { data, error } = await admin
-      .from('kb_documents')
-      .select('title, category, content')
-      .limit(5)
-    if (error || !data) return ''
-    return data
-      .filter((d) => d.content && !d.content.startsWith('('))
-      .map((d) => `### ${d.title} (${d.category})\n${(d.content as string).slice(0, 3000)}`)
-      .join('\n\n---\n\n')
-  } catch {
-    return ''
+// Map a user's last message to one or more KB categories so we can scope
+// the chunk search. Same keyword set used by triage to stay consistent.
+const CATEGORY_KEYWORDS: Record<string, string[]> = {
+  verizon: ['verizon', 'one talk', 'onetalk', 'polycom', 'yealink', 'vvx', 'iphone', 'samsung', 'galaxy', 'pixel', 'jetpack', 'mifi', 'apn', 'cellular', 'lte', '5g', 'sim', 'fios', 'g3100', 'cr1000', 'network extender', 'mdm', 'knox', 'desk phone'],
+  microsoft365: ['microsoft', 'm365', 'o365', 'outlook', 'teams', 'onedrive', 'sharepoint', 'mfa', 'multi-factor', 'authenticator', 'azure', 'entra', 'exchange'],
+  ucaas: ['voip', 'ringcentral', 'sip', 'pbx', 'extension', 'voicemail', 'auto attendant', 'hunt group', 'teams phone', 'call forwarding'],
+}
+
+function inferCategories(query: string): string[] {
+  const q = query.toLowerCase()
+  const matched: string[] = []
+  for (const [cat, kws] of Object.entries(CATEGORY_KEYWORDS)) {
+    if (kws.some((k) => q.includes(k))) matched.push(cat)
   }
+  // Always allow general docs to surface alongside specific ones.
+  matched.push('general')
+  return matched
 }
 
 export async function POST(req: NextRequest) {
+  const rl = checkRateLimit(`chat:${clientKeyFromRequest(req)}`, 30, 60 * 60 * 1000)
+  if (!rl.allowed) {
+    return NextResponse.json({
+      ok: false,
+      reply: `You've hit the chat limit (30 messages/hour). Please open a ticket below and Mark will reply directly.`,
+    }, { status: 429, headers: { 'Retry-After': String(rl.retryAfterSeconds) } })
+  }
+
   if (!process.env.GEMINI_API_KEY) {
     return NextResponse.json({
       ok: false,
@@ -85,9 +95,11 @@ export async function POST(req: NextRequest) {
     }
 
     const lastUserMsg = [...messages].reverse().find((m) => m.role === 'user')?.content ?? ''
+    const categories = inferCategories(lastUserMsg)
 
     const walkthroughCtx = buildKnowledgeContext(lastUserMsg)
-    const dbCtx = await loadKbDocsForCategory()
+    const kbHits = await searchKbDocuments(lastUserMsg, categories, 4)
+    const dbCtx = formatKbHits(kbHits)
     const combinedContext = [walkthroughCtx, dbCtx].filter(Boolean).join('\n\n---\n\n')
 
     const historyText = messages
@@ -120,7 +132,20 @@ Reply to the most recent client message. Use the KB above. If the client wants s
       })
     }
 
-    return NextResponse.json({ ok: true, reply: result.text.trim() })
+    const reply = result.text.trim()
+    // Flag escalation if the model said it's looping in Mark or there's
+    // simply no KB hit and no walkthrough match — UI surfaces a "Open ticket
+    // with this conversation" CTA in that case.
+    const escalate =
+      /loop in mark|submit a ticket|open a ticket/i.test(reply) ||
+      (kbHits.length === 0 && !/\d+\./.test(reply))
+
+    return NextResponse.json({
+      ok: true,
+      reply,
+      escalate,
+      sources: kbHits.map((h) => ({ title: h.doc_title, category: h.category })),
+    })
   } catch (err) {
     console.error('Ticketing chat exception:', err)
     return NextResponse.json({

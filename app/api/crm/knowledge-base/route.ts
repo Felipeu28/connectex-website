@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { requireAdmin } from '@/lib/auth-guard'
 import { getSupabaseAdmin } from '@/lib/ticket-triage'
+import { cleanExtractedText } from '@/lib/knowledge/pdf-clean'
 
 export const runtime = 'nodejs'
 export const maxDuration = 60
@@ -8,6 +9,7 @@ export const maxDuration = 60
 const VALID_CATEGORIES = ['verizon', 'microsoft365', 'ucaas', 'general'] as const
 const MAX_PDF_BYTES = 20 * 1024 * 1024 // 20MB
 const MAX_CONTENT_CHARS = 200_000
+const LOW_USEFULNESS_THRESHOLD = 35
 
 export async function GET() {
   const { errorResponse } = await requireAdmin()
@@ -105,21 +107,47 @@ export async function POST(req: NextRequest) {
           fileUrl = urlData?.publicUrl ?? null
         }
 
+        let extractedRaw = ''
+        let extractionError: string | null = null
         if (file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf')) {
           try {
-            content = await extractPdfText(buffer)
-            if (!content?.trim()) {
-              content = '(PDF uploaded — text extraction returned empty. Use the file URL to view contents.)'
-            }
+            extractedRaw = await extractPdfText(buffer)
+            if (!extractedRaw.trim()) extractionError = 'PDF text extraction returned no content (file may be image-only / scanned).'
           } catch (err) {
             console.error('PDF parse error:', err)
-            content = '(PDF uploaded — text extraction failed. AI cannot reference text content of this file.)'
+            extractionError = `PDF parser failed: ${err instanceof Error ? err.message : String(err)}`
           }
         } else if (file.type.startsWith('text/') || /\.(txt|md|markdown)$/i.test(file.name)) {
-          const text = new TextDecoder().decode(buffer)
-          content = text.slice(0, MAX_CONTENT_CHARS)
+          extractedRaw = new TextDecoder().decode(buffer).slice(0, MAX_CONTENT_CHARS)
         } else {
-          content = rawContent || `(${file.type || 'binary'} file uploaded — content extraction not supported.)`
+          extractionError = `${file.type || 'binary'} file type — content extraction not supported. Paste text below or upload a PDF/TXT/MD.`
+        }
+
+        if (extractionError && !rawContent) {
+          return NextResponse.json({
+            error: extractionError,
+            file_url: fileUrl,
+            file_name: fileName,
+          }, { status: 422 })
+        }
+
+        if (extractedRaw) {
+          const cleaned = cleanExtractedText(extractedRaw)
+          content = cleaned.text.slice(0, MAX_CONTENT_CHARS)
+          // Refuse the save outright if the cleaned text is too noisy and the
+          // caller didn't supply a manual fallback. The UI gets a preview so
+          // Mark can paste corrected text and retry.
+          if (cleaned.usefulness < LOW_USEFULNESS_THRESHOLD && !rawContent) {
+            return NextResponse.json({
+              error: 'Extracted text quality is too low to use as AI knowledge (mostly layout artifacts). Paste cleaned text below and re-save, or upload a different file.',
+              preview: content.slice(0, 800),
+              usefulness: cleaned.usefulness,
+              file_url: fileUrl,
+              file_name: fileName,
+            }, { status: 422 })
+          }
+        } else if (rawContent) {
+          content = rawContent
         }
       } else if (rawContent) {
         content = rawContent
@@ -130,6 +158,16 @@ export async function POST(req: NextRequest) {
       category = body.category
       content = body.content?.trim()
       fileName = body.file_name ?? null
+    }
+
+    // Re-clean any pasted content too — Mark may paste raw PDF copy/paste.
+    if (content) {
+      const cleaned = cleanExtractedText(content)
+      // Only swap in the cleaned version if it actually changed something —
+      // otherwise we'd strip intentional formatting from hand-written notes.
+      if (cleaned.removedChars > 0 && cleaned.usefulness >= LOW_USEFULNESS_THRESHOLD) {
+        content = cleaned.text.slice(0, MAX_CONTENT_CHARS)
+      }
     }
 
     if (!title || !category || !content) {
@@ -173,7 +211,8 @@ export async function POST(req: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
 
-    return NextResponse.json(data, { status: 201 })
+    const preview = (content ?? '').slice(0, 500)
+    return NextResponse.json({ ...data, preview }, { status: 201 })
   } catch (err) {
     console.error('KB POST exception:', err)
     return NextResponse.json({ error: err instanceof Error ? err.message : 'Internal server error' }, { status: 500 })

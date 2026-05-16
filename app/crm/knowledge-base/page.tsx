@@ -106,15 +106,36 @@ export default function KnowledgeBasePage() {
     }
 
     if (res.ok) {
-      setTitle('')
-      setCategory('general')
-      setContent('')
-      setFileName(null)
-      setPendingFile(null)
-      setShowForm(false)
-      loadDocs()
+      const data = await res.json().catch(() => null)
+      if (data?.preview) {
+        // Show the preview briefly so Mark sees the AI is grounded in clean text.
+        setFormError(null)
+        setContent(`✓ Saved. Cleaned-text preview:\n\n${data.preview}${data.preview.length >= 500 ? '…' : ''}`)
+        setTimeout(() => {
+          setTitle('')
+          setCategory('general')
+          setContent('')
+          setFileName(null)
+          setPendingFile(null)
+          setShowForm(false)
+          loadDocs()
+        }, 2500)
+      } else {
+        setTitle('')
+        setCategory('general')
+        setContent('')
+        setFileName(null)
+        setPendingFile(null)
+        setShowForm(false)
+        loadDocs()
+      }
     } else {
       const err = await res.json().catch(() => ({ error: 'Failed to save document.' }))
+      // If the server returned a noisy extraction preview, load it into the
+      // content box so Mark can clean it up and re-save.
+      if (err.preview) {
+        setContent(err.preview)
+      }
       setFormError(err.error ?? 'Failed to save document.')
     }
     setSaving(false)
