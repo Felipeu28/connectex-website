@@ -4,6 +4,7 @@ import { createClient as createAdminClient } from '@supabase/supabase-js'
 import { notifyClientTicketCreated } from '@/lib/ticket-notifications'
 import { runTriage } from '@/lib/ticket-triage'
 import { requireAdmin } from '@/lib/auth-guard'
+import { checkRateLimit, clientKeyFromRequest } from '@/lib/rate-limit'
 
 const PRIORITIES = ['low', 'medium', 'high', 'urgent'] as const
 
@@ -15,6 +16,16 @@ function getSupabaseAdmin() {
 }
 
 export async function POST(req: NextRequest) {
+  // 10 ticket creations per IP per hour. A real client opening multiple
+  // distinct tickets in one session is well below this; abuse is far above.
+  const rl = checkRateLimit(`ticket:${clientKeyFromRequest(req)}`, 10, 60 * 60 * 1000)
+  if (!rl.allowed) {
+    return NextResponse.json(
+      { error: `Too many tickets from this address — try again in ${rl.retryAfterSeconds}s, or email support@connectex.net directly.` },
+      { status: 429, headers: { 'Retry-After': String(rl.retryAfterSeconds) } }
+    )
+  }
+
   try {
     const data = await req.json()
     const { name, email, company, subject, description, priority, image_url, user_id } = data

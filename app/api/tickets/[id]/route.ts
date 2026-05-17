@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@/lib/supabase'
 import { notifyClientNewReply } from '@/lib/ticket-notifications'
+import { runFollowUp } from '@/lib/ticket-triage'
+import { checkRateLimit, clientKeyFromRequest } from '@/lib/rate-limit'
 
 interface RouteContext {
   params: Promise<{ id: string }>
@@ -37,27 +39,37 @@ export async function GET(_req: NextRequest, context: RouteContext) {
 }
 
 export async function POST(req: NextRequest, context: RouteContext) {
+  // Rate limit: 30 replies per IP per hour. Catches runaway loops without
+  // blocking a real back-and-forth conversation.
+  const rl = checkRateLimit(`reply:${clientKeyFromRequest(req)}`, 30, 60 * 60 * 1000)
+  if (!rl.allowed) {
+    return NextResponse.json(
+      { error: `Too many replies — retry in ${rl.retryAfterSeconds}s` },
+      { status: 429, headers: { 'Retry-After': String(rl.retryAfterSeconds) } }
+    )
+  }
+
   try {
     const { id: token } = await context.params
     const data = await req.json()
-    const { sender_type, sender_name, message } = data
+    const { sender_name, message } = data
 
     // Validate required fields
-    if (!sender_type || !sender_name || !message) {
+    if (!sender_name || !message) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 })
     }
 
-    // Validate sender_type
-    if (!['client', 'admin', 'ai'].includes(sender_type)) {
-      return NextResponse.json({ error: 'Invalid sender type' }, { status: 400 })
-    }
+    // Token-based access is *always* a client reply. Admin/AI messages go
+    // through their own authenticated routes — we never trust sender_type
+    // from a public token caller.
+    const sender_type = 'client' as const
 
     const supabase = createClient()
 
     // Look up the ticket by token to get the internal id
     const { data: ticket, error: ticketError } = await supabase
       .from('tickets')
-      .select('id, token, status, name, email, subject, human_took_over')
+      .select('id, token, status, name, email, subject, human_took_over, ai_handled')
       .eq('token', token)
       .single()
 
@@ -90,21 +102,26 @@ export async function POST(req: NextRequest, context: RouteContext) {
       return NextResponse.json({ error: 'Failed to send message' }, { status: 500 })
     }
 
-    // Mark human_took_over on first admin reply (stops AI from responding further)
-    const updates: Record<string, unknown> = { updated_at: new Date().toISOString() }
-    if (sender_type === 'admin' && !ticket.human_took_over) {
-      updates.human_took_over = true
-      updates.human_took_over_at = new Date().toISOString()
-    }
-    await supabase.from('tickets').update(updates).eq('id', ticket.id)
+    await supabase.from('tickets').update({
+      updated_at: new Date().toISOString(),
+      // Re-open if the client replies on a ticket that the AI already moved
+      // to in_progress — the conversation is alive again.
+      status: 'in_progress',
+    }).eq('id', ticket.id)
 
-    // Email client when admin replies
-    if (sender_type === 'admin') {
+    if (ticket.human_took_over) {
+      // Notify Mark directly when a client replies on a ticket he's already
+      // handling. Use the existing reply-notification template addressed to
+      // support@.
       notifyClientNewReply(
-        { clientName: ticket.name, clientEmail: ticket.email, subject: ticket.subject, token: ticket.token },
+        { clientName: 'Mark Polanco', clientEmail: 'support@connectex.net', subject: `Client reply: ${ticket.subject}`, token: ticket.token },
         message,
-        sender_name
+        ticket.name
       ).catch(() => {})
+    } else if (ticket.ai_handled) {
+      // Fire-and-forget AI follow-up. The AI either replies (status stays
+      // in_progress) or escalates to Mark.
+      runFollowUp(ticket.id).catch((err) => console.error('Follow-up failed:', err))
     }
 
     return NextResponse.json(newMessage, { status: 201 })

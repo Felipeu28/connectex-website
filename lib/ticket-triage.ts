@@ -6,6 +6,7 @@ import { readFileSync } from 'fs'
 import { join } from 'path'
 import { notifyClientNewReply } from '@/lib/ticket-notifications'
 import { callGeminiJSON, GEMINI_FLASH, type GeminiPart } from '@/lib/gemini'
+import { searchKbDocuments, formatKbHits } from '@/lib/knowledge/kb-search'
 
 export function getSupabaseAdmin() {
   return createAdminClient(
@@ -255,18 +256,14 @@ export async function runTriage(ticket_id: string): Promise<TriageResult> {
   const categories = detectCategory(ticket.subject, ticket.description)
   const staticKnowledge = loadKnowledge(categories)
 
-  // Load dynamic KB documents from database
+  // Load dynamic KB chunks ranked by relevance to the ticket — not the whole
+  // document. Keeps prompt size bounded and surfaces the actually-relevant
+  // section of long PDFs.
   const dynamicKnowledge = await (async () => {
     try {
-      const { data } = await supabase
-        .from('kb_documents')
-        .select('title, content')
-        .in('category', categories)
-        .not('content', 'is', null)
-      if (!data || data.length === 0) return ''
-      return data
-        .map((doc: { title: string; content: string }) => `## ${doc.title}\n${doc.content}`)
-        .join('\n\n---\n\n')
+      const query = `${ticket.subject} ${ticket.description}`
+      const hits = await searchKbDocuments(query, categories, 5)
+      return formatKbHits(hits)
     } catch {
       return ''
     }
@@ -348,6 +345,18 @@ Analyze this ticket and respond with ONLY valid JSON in this exact format:
 
   if (!triageResult.ok) {
     console.error('Triage failed for ticket', ticket_id, '—', triageResult.error)
+    // Fail loudly to Mark instead of leaving the ticket silently un-triaged.
+    await supabase.from('tickets').update({
+      routed_to_mark: true,
+      updated_at: new Date().toISOString(),
+    }).eq('id', ticket_id)
+    await notifyMark(ticket, {
+      category: 'general',
+      confidence: 0,
+      priority_override: null,
+      routing_reason: `AI triage unavailable (${triageResult.error ?? 'unknown error'}) — please review manually`,
+      auto_response: '',
+    })
     return { can_handle: false, confidence: 0, category: 'general', priority_override: null, routing_reason: null, error: triageResult.error }
   }
 
@@ -414,6 +423,164 @@ Analyze this ticket and respond with ONLY valid JSON in this exact format:
     confidence: triage.confidence,
     category: triage.category,
     priority_override: triage.priority_override,
+    routing_reason: triage.routing_reason ?? null,
+  }
+}
+
+// ─── Follow-up AI on client reply ────────────────────────────────────────────
+//
+// Called when a client posts a new message on an existing ticket. If the AI
+// was originally handling the ticket (no human takeover) and we haven't hit
+// the AI-reply cap, generate a follow-up. Otherwise escalate to Mark so the
+// reply doesn't sit silently.
+
+const MAX_AI_FOLLOWUPS = 3
+
+export async function runFollowUp(ticket_id: string): Promise<TriageResult> {
+  if (!process.env.GEMINI_API_KEY) {
+    return { can_handle: false, confidence: 0, category: 'general', priority_override: null, routing_reason: null, error: 'GEMINI_API_KEY not set' }
+  }
+
+  const supabase = getSupabaseAdmin()
+
+  const { data: ticket, error } = await supabase
+    .from('tickets')
+    .select('*')
+    .eq('id', ticket_id)
+    .single()
+
+  if (error || !ticket) {
+    return { can_handle: false, confidence: 0, category: 'general', priority_override: null, routing_reason: null, error: 'Ticket not found' }
+  }
+
+  // Only respond if AI was originally handling and a human hasn't taken over.
+  if (ticket.human_took_over || !ticket.ai_handled) {
+    return { skipped: true, can_handle: false, confidence: 0, category: 'general', priority_override: null, routing_reason: null }
+  }
+
+  // Load conversation
+  const { data: messages } = await supabase
+    .from('ticket_messages')
+    .select('sender_type, sender_name, message, created_at')
+    .eq('ticket_id', ticket_id)
+    .order('created_at', { ascending: true })
+
+  const aiReplyCount = (messages ?? []).filter((m) => m.sender_type === 'ai').length
+  if (aiReplyCount >= MAX_AI_FOLLOWUPS) {
+    // Cap reached — hand off to Mark.
+    await supabase.from('tickets').update({
+      routed_to_mark: true,
+      ai_handled: false,
+      updated_at: new Date().toISOString(),
+    }).eq('id', ticket_id)
+    await notifyMark(ticket, {
+      category: ticket.ai_category ?? 'general',
+      confidence: 0,
+      priority_override: null,
+      routing_reason: `Client replied after ${aiReplyCount} AI responses — handing off for human follow-up`,
+      auto_response: '',
+    })
+    return { can_handle: false, confidence: 0, category: ticket.ai_category ?? 'general', priority_override: null, routing_reason: 'AI cap reached' }
+  }
+
+  const lastClientMsg = [...(messages ?? [])].reverse().find((m) => m.sender_type === 'client')?.message ?? ''
+
+  const categories = detectCategory(ticket.subject, ticket.description + ' ' + lastClientMsg)
+  const staticKnowledge = loadKnowledge(categories)
+  const dynamicKnowledge = await searchKbDocuments(`${ticket.subject} ${lastClientMsg}`, categories, 5)
+    .then(formatKbHits)
+    .catch(() => '')
+
+  const knowledgeContext = [staticKnowledge, dynamicKnowledge].filter(Boolean).join('\n\n---\n\n')
+
+  const conversation = (messages ?? [])
+    .map((m) => `${m.sender_type === 'client' ? 'Client' : m.sender_type === 'ai' ? 'AI Assistant' : 'Mark'}: ${m.message}`)
+    .join('\n\n')
+
+  const followUpPrompt = `This is a follow-up on an existing ticket. The client has replied — figure out if you can keep helping or if Mark needs to step in.
+
+Original subject: ${ticket.subject}
+Original description: ${ticket.description}
+
+Full conversation so far:
+${conversation}
+
+Respond with ONLY valid JSON:
+{
+  "can_handle": true if you have a useful next-step answer from the KB; false if the client is stuck on something the KB doesn't cover, frustrated, or asking for a human,
+  "confidence": 0-100,
+  "category": "verizon" | "microsoft365" | "ucaas" | "general",
+  "auto_response": "your reply to the client — acknowledge their last message, give the next concrete step from the KB, or politely hand off",
+  "priority_override": null,
+  "routing_reason": "if can_handle is false, one sentence for Mark explaining what's been tried and what's still broken"
+}`
+
+  const result = await callGeminiJSON<{
+    can_handle: boolean
+    confidence: number
+    category: string
+    auto_response: string
+    priority_override: string | null
+    routing_reason: string
+  }>({
+    model: GEMINI_FLASH,
+    systemInstruction: buildSystemPrompt(knowledgeContext),
+    parts: [{ text: followUpPrompt }],
+    maxOutputTokens: 1200,
+  })
+
+  if (!result.ok) {
+    console.error('Follow-up triage failed for ticket', ticket_id, '—', result.error)
+    await notifyMark(ticket, {
+      category: ticket.ai_category ?? 'general',
+      confidence: 0,
+      priority_override: null,
+      routing_reason: `Client replied and AI follow-up failed (${result.error ?? 'unknown'}) — please review`,
+      auto_response: '',
+    })
+    return { can_handle: false, confidence: 0, category: 'general', priority_override: null, routing_reason: null, error: result.error }
+  }
+
+  const triage = result.data
+  const shouldHandle = triage.can_handle && triage.confidence >= 65
+  const now = new Date().toISOString()
+
+  if (shouldHandle) {
+    await supabase.from('ticket_messages').insert({
+      ticket_id,
+      sender_type: 'ai',
+      sender_name: 'Connectex AI Support',
+      message: triage.auto_response,
+    })
+    await supabase.from('tickets').update({
+      ai_response: triage.auto_response,
+      updated_at: now,
+    }).eq('id', ticket_id)
+    notifyClientNewReply(
+      { clientName: ticket.name, clientEmail: ticket.email, subject: ticket.subject, token: ticket.token },
+      triage.auto_response,
+      'Connectex AI Support'
+    ).catch(() => {})
+  } else {
+    await supabase.from('tickets').update({
+      routed_to_mark: true,
+      ai_handled: false,
+      updated_at: now,
+    }).eq('id', ticket_id)
+    await notifyMark(ticket, {
+      category: triage.category,
+      confidence: triage.confidence,
+      priority_override: null,
+      routing_reason: triage.routing_reason || 'Client follow-up needs human attention',
+      auto_response: '',
+    })
+  }
+
+  return {
+    can_handle: shouldHandle,
+    confidence: triage.confidence,
+    category: triage.category,
+    priority_override: null,
     routing_reason: triage.routing_reason ?? null,
   }
 }
